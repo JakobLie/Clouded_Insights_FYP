@@ -1,4 +1,4 @@
-```bash # Ignore this, for formatting
+```bash # For formatting only
 # Flask Backend
 
 ## Virtual Environment (venv)
