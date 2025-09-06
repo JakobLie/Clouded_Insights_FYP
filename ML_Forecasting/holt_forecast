@@ -1,0 +1,148 @@
+
+# Before running do this: pip install pandas numpy statsmodels xlsxwriter
+
+import pandas as pd
+import numpy as np
+from pathlib import Path
+from statsmodels.tsa.holtwinters import Holt
+
+
+FILE_PATH  = r"C:\Users\benti\Downloads\P&L_MONTHLY.xlsx"  
+SHEET_NAME = "Sheet1"
+HORIZON    = 3                       
+OUTPUT_FILE = Path(FILE_PATH).parent / "HOLT_ALL_rows_forecast.xlsx"
+MIN_POINTS  = 3                    
+
+
+BU_PREFIX  = ""                      
+
+
+FIX_ALPHA = None
+FIX_BETA  = None
+
+
+BASE_MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+
+def _normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
+    
+    df = df.copy()
+    mask = ~df.columns.astype(str).str.match(r"\s*Unnamed:\s*\d+\s*$")
+    df = df.loc[:, mask]
+    df.columns = [str(c).strip() for c in df.columns]
+    return df
+
+def _month_cols_for_prefix(df: pd.DataFrame, prefix: str) -> list[str]:
+    
+    wanted = [f"{prefix}{m}" if prefix else m for m in BASE_MONTHS]
+    return [c for c in wanted if c in df.columns]
+
+def _err_metrics(y: pd.Series, fitted: pd.Series):
+    mask = y.notna() & fitted.notna()
+    if mask.sum() == 0:
+        return np.nan, np.nan
+    mae = float((y[mask] - fitted[mask]).abs().mean())
+    denom = y[mask].replace(0, np.nan)
+    mape = float(((y[mask] - fitted[mask]).abs() / denom).mean() * 100)
+    return mae, mape
+
+def fit_holt(y: pd.Series, horizon: int, alpha=None, beta=None):
+   
+    model = Holt(y, initialization_method="heuristic")
+    if alpha is None and beta is None:
+        res = model.fit(optimized=True)
+    else:
+        res = model.fit(
+            smoothing_level=alpha if alpha is not None else None,
+            smoothing_trend=beta if beta is not None else None,
+            optimized=False if (alpha is not None and beta is not None) else True
+        )
+
+    fitted = pd.Series(res.fittedvalues, index=y.index, name="Fitted")
+    fc_vals = np.asarray(res.forecast(horizon), dtype=float)
+    mae, mape = _err_metrics(y, fitted)
+
+    return {
+        "alpha": res.params.get("smoothing_level", None),
+        "beta":  res.params.get("smoothing_trend", None),
+        "level": res.params.get("initial_level", None),
+        "trend": res.params.get("initial_trend", None),
+        "fitted": fitted,
+        "forecast": fc_vals,
+        "mae": mae,
+        "mape": mape,
+    }
+
+def main():
+    df_raw = pd.read_excel(FILE_PATH, sheet_name=SHEET_NAME)
+    df = _normalize_columns(df_raw)
+
+    if not {"Code", "Module Name"}.issubset(df.columns):
+        raise ValueError("Expected 'Code' and 'Module Name' columns.")
+
+    month_cols = _month_cols_for_prefix(df, BU_PREFIX)
+    if len(month_cols) < MIN_POINTS:
+        raise ValueError(f"Need ≥{MIN_POINTS} month columns for prefix '{BU_PREFIX}'. Found: {month_cols}")
+
+    summary_rows, long_rows, error_rows = [], [], []
+
+    for idx, row in df.iterrows():
+        code = str(row.get("Code", f"row_{idx}"))
+        name = "" if pd.isna(row.get("Module Name")) else str(row.get("Module Name"))
+
+        y = pd.to_numeric(row[month_cols], errors="coerce")
+        y.index = [c.replace(BU_PREFIX, "") if BU_PREFIX else c for c in month_cols]
+
+        if y.notna().sum() < MIN_POINTS:
+            error_rows.append({"Code": code, "Module Name": name, "Reason": "Insufficient data"})
+            continue
+
+        try:
+            result = fit_holt(y, HORIZON, alpha=FIX_ALPHA, beta=FIX_BETA)
+
+            # Summary row
+            srow = {
+                "Code": code,
+                "Module Name": name,
+                "alpha_used": result["alpha"],
+                "beta_used": result["beta"],
+                "MAE": result["mae"],
+                "MAPE_%": result["mape"],
+            }
+            for i in range(1, HORIZON + 1):
+                srow[f"F+{i}"] = float(result["forecast"][i - 1])
+            summary_rows.append(srow)
+
+            # Long table
+            fitted = result["fitted"]
+            for m in y.index:
+                long_rows.append({
+                    "Code": code, "Module Name": name,
+                    "Step": m,
+                    "Actual": float(y[m]) if pd.notna(y[m]) else np.nan,
+                    "Fitted/Forecast": float(fitted[m]) if pd.notna(fitted[m]) else np.nan
+                })
+            for i in range(1, HORIZON + 1):
+                long_rows.append({
+                    "Code": code, "Module Name": name,
+                    "Step": f"F+{i}",
+                    "Actual": np.nan,
+                    "Fitted/Forecast": float(result["forecast"][i - 1])
+                })
+
+        except Exception as e:
+            error_rows.append({"Code": code, "Module Name": name, "Reason": f"{type(e).__name__}: {e}"})
+
+    summary_df = pd.DataFrame(summary_rows)
+    long_df    = pd.DataFrame(long_rows)
+    errors_df  = pd.DataFrame(error_rows)
+
+    with pd.ExcelWriter(OUTPUT_FILE, engine="xlsxwriter") as writer:
+        summary_df.to_excel(writer, sheet_name="Summary", index=False)
+        long_df.to_excel(writer, sheet_name="Forecast_Long", index=False)
+        errors_df.to_excel(writer, sheet_name="Errors", index=False)
+
+    print(f"Done")
+    print(f"Using Holt’s Linear | Prefix='{BU_PREFIX}' | Months: {month_cols}")
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,127 @@
+
+# Before running do this: pip install pandas numpy statsmodels xlsxwriter
+
+import pandas as pd
+import numpy as np
+from statsmodels.tsa.holtwinters import SimpleExpSmoothing
+from pathlib import Path
+
+
+FILE_PATH  = r"C:\Users\benti\Downloads\P&L_MONTHLY.xlsx"  
+SHEET_NAME = "Sheet1"
+# no of months ahead to forecast
+HORIZON    = 3                      
+OUTPUT_FILE = Path(FILE_PATH).parent / "SES_ALL_rows_forecast.xlsx"
+  # need at least 3 non-missing months
+MIN_POINTS  = 3                    
+
+BU_PREFIX  = ""                      
+
+BASE_MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+
+def _normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    # drop entirely unnamed/blank columns (e.g., the spacer columns)
+    df = df.loc[:, ~df.columns.astype(str).str.fullmatch(r"\s*Unnamed: \d+\s*")]
+    # trim whitespace
+    df.columns = [str(c).strip() for c in df.columns]
+    return df
+
+def _month_cols_for_prefix(df: pd.DataFrame, prefix: str) -> list[str]:
+    """
+    Return month columns in Jan..Dec order for the given prefix.
+    prefix=""  -> ["Jan","Feb",...,"Dec"]
+    prefix="BB1_" -> ["BB1_Jan",...,"BB1_Dec"]
+    """
+    candidates = [f"{prefix}{m}" if prefix else m for m in BASE_MONTHS]
+    present = [c for c in candidates if c in df.columns]
+    return present
+
+def fit_ses_series(y: pd.Series, horizon: int):
+    model = SimpleExpSmoothing(y, initialization_method="heuristic")
+    fit = model.fit(optimized=True)
+    alpha_used = fit.params.get("smoothing_level", None)
+    fitted = pd.Series(fit.fittedvalues, index=y.index, name="Fitted")
+    fc_vals = np.asarray(fit.forecast(horizon), dtype=float)  # positional array
+    # errors
+    mask = y.notna() & fitted.notna()
+    mae = float((y[mask] - fitted[mask]).abs().mean())
+    denom = y[mask].replace(0, np.nan)
+    mape = float(((y[mask] - fitted[mask]).abs() / denom).mean() * 100)
+    return fitted, fc_vals, {"alpha_used": alpha_used, "MAE": mae, "MAPE_%": mape}
+
+def main():
+    df_raw = pd.read_excel(FILE_PATH, sheet_name=SHEET_NAME)
+    df = _normalize_columns(df_raw)
+
+    # Identifier columns
+    if not {"Code","Module Name"}.issubset(df.columns):
+        raise ValueError(f"Expected 'Code' and 'Module Name' columns. Found: {list(df.columns)[:8]} ...")
+
+    month_cols = _month_cols_for_prefix(df, BU_PREFIX)
+    if len(month_cols) < MIN_POINTS:
+        raise ValueError(f"Need at least {MIN_POINTS} month columns for prefix '{BU_PREFIX}'. Found: {month_cols}")
+
+    summary_rows, long_rows, error_rows = [], [], []
+
+    for idx, row in df.iterrows():
+        code = str(row.get("Code", f"row_{idx}"))
+        name = "" if pd.isna(row.get("Module Name")) else str(row.get("Module Name"))
+
+        # Build monthly series
+        y = pd.to_numeric(row[month_cols], errors="coerce")
+        y.index = [c.replace(BU_PREFIX, "") if BU_PREFIX else c for c in month_cols]  # show clean month labels
+
+        if y.notna().sum() < MIN_POINTS:
+            error_rows.append({"Code": code, "Module Name": name, "Reason": "Insufficient data"})
+            continue
+
+        try:
+            fitted, fc_vals, meta = fit_ses_series(y, horizon=HORIZON)
+
+            # Summary (always fill F+1..F+H by position)
+            srow = {
+                "Code": code,
+                "Module Name": name,
+                "alpha_used": meta["alpha_used"],
+                "MAE": meta["MAE"],
+                "MAPE_%": meta["MAPE_%"],
+            }
+            for i in range(1, HORIZON+1):
+                srow[f"F+{i}"] = float(fc_vals[i-1])
+            summary_rows.append(srow)
+
+            # Long (Actual months + Forecast steps)
+            for m in y.index:
+                long_rows.append({
+                    "Code": code, "Module Name": name,
+                    "Step": m,
+                    "Actual": float(y[m]) if pd.notna(y[m]) else np.nan,
+                    "Fitted/Forecast": float(fitted[m]) if pd.notna(fitted[m]) else np.nan
+                })
+            for i in range(1, HORIZON+1):
+                long_rows.append({
+                    "Code": code, "Module Name": name,
+                    "Step": f"F+{i}",
+                    "Actual": np.nan,
+                    "Fitted/Forecast": float(fc_vals[i-1])
+                })
+
+        except Exception as e:
+            error_rows.append({"Code": code, "Module Name": name, "Reason": f"{type(e).__name__}: {e}"})
+
+    # Build and save
+    summary_df = pd.DataFrame(summary_rows)
+    long_df    = pd.DataFrame(long_rows)
+    errors_df  = pd.DataFrame(error_rows)
+
+    with pd.ExcelWriter(OUTPUT_FILE, engine="xlsxwriter") as writer:
+        summary_df.to_excel(writer, sheet_name="Summary", index=False)
+        long_df.to_excel(writer, sheet_name="Forecast_Long", index=False)
+        errors_df.to_excel(writer, sheet_name="Errors", index=False)
+
+    print(f"Done. Results saved to: {OUTPUT_FILE}")
+    print(f"Using month columns (prefix='{BU_PREFIX}'): {month_cols}")
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,197 @@
+from pathlib import Path
+import re
+import numpy as np
+import pandas as pd
+
+# File Path
+INPUT_FILE  = r"C:\Users\benti\OneDrive\Desktop\SMU PC P N L .xlsx"
+OUTPUT_FILE = r"C:\Users\benti\Documents\SMU_PC_P_N_L_monthly_with_BUs.xlsx" 
+VARIATION   = 0.05
+SEED        = 42
+YTD_LABELS_NORMALIZED = {"ytd"}  
+BU_COLS     = ["BB1", "BBS2", "HQ", "LOG", "MCE"]
+
+
+MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+
+# Matches the code like 5000-A001 
+CODE_REGEX  = re.compile(r"^\d{4}-[A-Z]?\d{3,4}$")
+# Matches Header code like '0000' or 'Z000'
+HEADER_TAIL = re.compile(r"^[A-Z]?0{3,4}$")  # '0000' or 'Z000'
+
+def norm(s: str) -> str:
+    
+    if not isinstance(s, str):
+        return ""
+    s = s.strip().lower()
+    s = s.replace("\u00a0", " ")  
+    s = re.sub(r"[\s\-_/\.]+", "", s)
+    return s
+
+def split_series_total(value: float, variation: float, rng: np.random.Generator) -> np.ndarray:
+    if pd.isna(value):
+        return np.array([np.nan]*12, dtype=float)
+    base = float(value) / 12.0
+    multipliers = rng.uniform(1 - variation, 1 + variation, 12)
+    monthly = base * multipliers
+    s = monthly.sum()
+    scale = (float(value) / s) if s != 0 else 1.0
+    monthly *= scale
+    monthly = np.round(monthly, 2)
+    drift = round(float(value) - monthly.sum(), 2)
+    monthly[-1] = np.round(monthly[-1] + drift, 2)
+    return monthly
+
+def find_header_row_and_ytd_col(raw: pd.DataFrame):
+    
+    for r in range(len(raw)):
+        for c in range(raw.shape[1]):
+            if norm(raw.iat[r, c]) in YTD_LABELS_NORMALIZED:
+                return r, c
+    raise ValueError("Could not find a YTD header cell (looked for 'Y-T-D' / 'YTD').")
+
+def pick_identifier_cols(headers, df):
+    keep_cols = []
+    for guess in ["Code", "Account", "Account Code", headers[0], headers[1]]:
+        if isinstance(guess, str) and guess in df.columns and guess not in keep_cols:
+            keep_cols.append(guess)
+    if not keep_cols:
+        keep_cols = [df.columns[0], df.columns[1] if df.shape[1] > 1 else df.columns[0]]
+    return keep_cols
+
+def infer_code_col(keep_cols, df):
+    for name in keep_cols:
+        sample = (df[name].astype(str)
+                          .str.replace(r"\s+", " ", regex=True)
+                          .str.strip()
+                          .dropna()
+                          .head(100))
+        if sample.str.match(CODE_REGEX).any():
+            return name
+    return keep_cols[0]
+
+def is_leaf_code(code: str) -> bool:
+    if not isinstance(code, str):
+        return False
+    code = re.sub(r"\s+", " ", code).strip()
+    if not CODE_REGEX.match(code):
+        return False
+    tail = code.split("-", 1)[1]
+    if HEADER_TAIL.match(tail):  
+        return False
+    return True
+
+def process_file(input_path: str):
+    print(f"Reading: {input_path}")
+    raw = pd.read_excel(input_path, sheet_name=0, header=None, engine="openpyxl")
+
+    header_row, ytd_col_idx = find_header_row_and_ytd_col(raw)
+    headers_raw = raw.iloc[header_row].tolist()
+    headers = [h if isinstance(h, str) and str(h).strip() else f"col_{i}"
+               for i, h in enumerate(headers_raw)]
+    ytd_col_name = headers[ytd_col_idx]
+
+    print(f"Detected header row: {header_row}")
+    print(f"Detected YTD column name: '{ytd_col_name}' (index {ytd_col_idx})")
+    print(f"All headers: {headers}")
+
+    df = raw.iloc[header_row + 1:].copy()
+    df.columns = headers
+
+    keep_cols = pick_identifier_cols(headers, df)
+    for col in keep_cols:
+        df[col] = (df[col].astype(str)
+                         .str.replace(r"\s+", " ", regex=True)
+                         .str.strip())
+    code_col = infer_code_col(keep_cols, df)
+    print(f"Identifier columns kept: {keep_cols} | Code column inferred: {code_col}")
+
+    # Make numeric
+    df[ytd_col_name] = pd.to_numeric(df[ytd_col_name], errors="coerce")
+    present_bus = []
+    for col in BU_COLS:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+            present_bus.append(col)
+    print(f"BU columns present: {present_bus}")
+
+    # Filter rows
+    data = df[df[ytd_col_name].notna()].copy()
+    before_codes = len(data)
+    data = data[data[code_col].apply(is_leaf_code)]
+    after_codes = len(data)
+    print(f"Rows with numeric YTD: {before_codes} | Leaf-code rows kept: {after_codes}")
+
+    if after_codes == 0:
+        print("No leaf rows found")
+    
+        out_path = OUTPUT_FILE or str(Path(input_path).with_name(Path(input_path).stem + "_monthly_with_BUs.xlsx"))
+        Path(out_path).parent.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame(columns=keep_cols + ["YTD"] + MONTHS).to_excel(out_path, index=False)
+        print(f"Saved empty result to: {out_path}")
+        return out_path
+
+    rng = np.random.default_rng(SEED)
+
+    # Build output columns
+    out_cols = keep_cols + ["YTD"] + MONTHS
+    for bu in present_bus:
+        out_cols += [f"{bu}_YTD"] + [f"{bu}_{m}" for m in MONTHS]
+
+    out_rows = []
+
+    for _, row in data.iterrows():
+        ytd_val = float(row[ytd_col_name]) if pd.notna(row[ytd_col_name]) else np.nan
+
+        bu_vals = {bu: float(row[bu]) for bu in present_bus if pd.notna(row[bu])}
+        bu_total = sum(bu_vals.values()) if bu_vals else 0.0
+
+        row_dict = {keep_cols[0]: row[keep_cols[0]]}
+        if len(keep_cols) > 1:
+            row_dict[keep_cols[1]] = row[keep_cols[1]]
+
+        if bu_vals and abs(bu_total) > 0:
+            # Split each BU => monthly total is the sum of BU months (ensures add-up per month)
+            bu_months = {bu: split_series_total(val, VARIATION, rng) for bu, val in bu_vals.items()}
+            monthly_total = np.sum(np.vstack(list(bu_months.values())), axis=0)
+            ytd_split = monthly_total
+            ytd_out = round(float(bu_total), 2)  # trust BU sum
+        else:
+            # No BU breakdown => split YTD only
+            ytd_split = split_series_total(ytd_val, VARIATION, rng)
+            ytd_out = round(float(ytd_val), 2)
+            bu_months = {}
+
+        row_dict["YTD"] = ytd_out
+        for m, v in zip(MONTHS, ytd_split):
+            row_dict[m] = v
+
+        for bu in present_bus:
+            if bu in bu_months:
+                row_dict[f"{bu}_YTD"] = round(float(bu_vals[bu]), 2)
+                for m, v in zip(MONTHS, bu_months[bu]):
+                    row_dict[f"{bu}_{m}"] = v
+            else:
+                row_dict[f"{bu}_YTD"] = np.nan
+                for m in MONTHS:
+                    row_dict[f"{bu}_{m}"] = np.nan
+
+        out_rows.append(row_dict)
+
+    out_df = pd.DataFrame(out_rows, columns=out_cols)
+
+    out_path = OUTPUT_FILE or str(Path(input_path).with_name(Path(input_path).stem + "_monthly_with_BUs.xlsx"))
+    Path(out_path).parent.mkdir(parents=True, exist_ok=True)
+    out_df.to_excel(out_path, index=False)
+    print(f"Saved: {out_path}  |  Rows: {len(out_df)}")
+    # preview a few rows to console
+    with pd.option_context("display.max_columns", None, "display.width", 200):
+        print(out_df.head(5))
+
+    return out_path
+
+if __name__ == "__main__":
+    try:
+        process_file(INPUT_FILE)
+    except Exception as e:
+        print("ERROR:", e)
