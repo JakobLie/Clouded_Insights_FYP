@@ -1,0 +1,16 @@
+volumes:
+  db_data:
+
+services:
+  db:
+    image: postgres:latest
+    container_name: local_postgres
+    environment:
+      POSTGRES_USER: cloudedinsights
+      POSTGRES_PASSWORD: cloudedinsights
+      POSTGRES_DB: tsh_db
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./database:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
