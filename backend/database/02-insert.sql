@@ -35,7 +35,7 @@ INSERT INTO pnl_category (code, name, category) VALUES
     ('5000-A005', 'Research and Development', 'Expense');
 
 -- Insert P&L entries
-INSERT INTO pnl_entry (pnl_code, business_unit, month, value) VALUES
+INSERT INTO pnl_record (pnl_code, business_unit, month, value) VALUES
     ('5000-A001', 'BB1', '2025-08-01', 50000),
     ('5000-A002', 'BB1', '2025-08-01', 20000),
     ('5000-A003', 'BB1', '2025-08-01', 10000),
