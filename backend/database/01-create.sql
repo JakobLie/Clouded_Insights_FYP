@@ -35,7 +35,7 @@ CREATE TABLE pnl_category (
     category VARCHAR(50) NOT NULL
 );
 
-CREATE TABLE pnl_record (
+CREATE TABLE pnl_entry (
     pnl_code VARCHAR(15) REFERENCES pnl_category(code),
     business_unit VARCHAR(10) REFERENCES business_unit(alias),
     month DATE,
