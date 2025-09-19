@@ -80,7 +80,7 @@ def authenticateEmployee():
     data = request.get_json()
 
     if not data or not all(
-        key in data for key in ['employee_id', 'password']
+        key in data for key in ['email', 'password']
     ):
         return jsonify(
             {
@@ -89,7 +89,7 @@ def authenticateEmployee():
             }
         ), 400
     
-    employee = db.session.scalars(db.select(db_classes.Employee).filter_by(id=data['employee_id'])).first()
+    employee = db.session.scalars(db.select(db_classes.Employee).filter_by(email=data['email'])).first()
 
     if not employee:
         return jsonify(
