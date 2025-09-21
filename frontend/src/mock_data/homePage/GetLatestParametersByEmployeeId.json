@@ -1,0 +1,16 @@
+{
+    "data": {
+        "Sales Target": 1010000,
+        "Cost Budget": 102000,
+        "Gross Profit Margin": 0.11,
+        "Operating Profit Margin": 0.12,
+        "Net Profit Margin": 0.13,
+        "Quick Ratio": 0.14,
+        "Return On Sales": 0.21,
+        "Days Sales Outstanding": 0.22,
+        "Receivables Turnover": 0.23,
+        "Cost Of Goods Sold Ratio": 0.31,
+        "Days Payable Outstanding": 0.32,
+        "Overhead Ratio": 0.33
+    }
+}
