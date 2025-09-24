@@ -1,0 +1,29 @@
+volumes:
+  db_data:
+
+services:
+  db:
+    image: postgres:latest
+    container_name: local_postgres
+    environment:
+      POSTGRES_USER: cloudedinsights
+      POSTGRES_PASSWORD: cloudedinsights
+      POSTGRES_DB: tsh_db
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./database:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+  
+  app:
+    build:
+      context: ./src
+      dockerfile: Dockerfile
+    container_name: app
+    ports:
+      - "5000:5000"
+    environment:
+      DATABASE_URL: postgresql://cloudedinsights:cloudedinsights@db:5432/tsh_db
+      TIMEZONE: Asia/Singapore
+    depends_on:
+      - db
