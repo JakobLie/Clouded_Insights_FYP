@@ -1,0 +1,32 @@
+{
+    "data": {
+        "keys": [
+            "09-2025",
+            "10-2025",
+            "11-2025"
+        ],
+        "entries": {
+            "09-2025": {
+                "Profit": 1500000,
+                "Gross Profit Margin": 0.31,
+                "Operating Profit Margin": 0.12,
+                "Net Profit Margin": 0.43,
+                "Quick Ratio": 0.64
+            },
+            "10-2025": {
+                "Profit": 1600000,
+                "Gross Profit Margin": 0.65,
+                "Operating Profit Margin": 0.65,
+                "Net Profit Margin": 0.72,
+                "Quick Ratio": 0.81
+            },
+            "11-2025": {
+                "Profit": 1800000,
+                "Gross Profit Margin": 0.57,
+                "Operating Profit Margin": 0.46,
+                "Net Profit Margin": 0.46,
+                "Quick Ratio": 0.57
+            }
+        }
+    }
+}

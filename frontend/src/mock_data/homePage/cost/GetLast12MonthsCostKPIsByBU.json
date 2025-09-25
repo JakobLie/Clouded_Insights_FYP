@@ -1,0 +1,92 @@
+{
+    "data": {
+        "keys": [
+            "09-2024",
+            "10-2024",
+            "11-2024",
+            "12-2024",
+            "01-2025",
+            "02-2025",
+            "03-2025",
+            "04-2025",
+            "05-2025",
+            "06-2025",
+            "07-2025",
+            "08-2025"
+        ],
+        "entries": {
+            "09-2024": {
+                "Cost": 10000,
+                "Cost Of Goods Sold Ratio": 0.31,
+                "Days Payable Outstanding": 0.17,
+                "Overhead Ratio": 0.40
+            },
+            "10-2024": {
+                "Cost": 20000,
+                "Cost Of Goods Sold Ratio": 0.64,
+                "Days Payable Outstanding": 0.64,
+                "Overhead Ratio": 0.74
+            },
+            "11-2024": {
+                "Cost": 30000,
+                "Cost Of Goods Sold Ratio": 0.55,
+                "Days Payable Outstanding": 0.40,
+                "Overhead Ratio": 0.40
+            },
+            "12-2024": {
+                "Cost": 40000,
+                "Cost Of Goods Sold Ratio": 0.31,
+                "Days Payable Outstanding": 0.74,
+                "Overhead Ratio": 0.86
+            },
+            "01-2025": {
+                "Cost": 30000,
+                "Cost Of Goods Sold Ratio": 0.31,
+                "Days Payable Outstanding": 0.31,
+                "Overhead Ratio": 0.55
+            },
+            "02-2025": {
+                "Cost": 20000,
+                "Cost Of Goods Sold Ratio": 0.55,
+                "Days Payable Outstanding": 0.55,
+                "Overhead Ratio": 0.64
+            },
+            "03-2025": {
+                "Cost": 30000,
+                "Cost Of Goods Sold Ratio": 0.55,
+                "Days Payable Outstanding": 0.55,
+                "Overhead Ratio": 0.40
+            },
+            "04-2025": {
+                "Cost": 40000,
+                "Cost Of Goods Sold Ratio": 0.17,
+                "Days Payable Outstanding": 0.17,
+                "Overhead Ratio": 0.29
+            },
+            "05-2025": {
+                "Cost": 30000,
+                "Cost Of Goods Sold Ratio": 0.17,
+                "Days Payable Outstanding": 0.91,
+                "Overhead Ratio": 0.86
+            },
+            "06-2025": {
+                "Cost": 50000,
+                "Cost Of Goods Sold Ratio": 0.31,
+                "Days Payable Outstanding": 0.40,
+                "Overhead Ratio": 0.55
+            },
+            "07-2025": {
+                "Cost": 60000,
+                "Cost Of Goods Sold Ratio": 0.40,
+                "Days Payable Outstanding": 0.31,
+                "Overhead Ratio": 0.40
+            },
+            "08-2025": {
+                "Cost": 70000,
+                "Cost Of Goods Sold Ratio": 0.29,
+                "Days Payable Outstanding": 0.17,
+                "Overhead Ratio": 0.29
+            }
+        }
+    }
+}
