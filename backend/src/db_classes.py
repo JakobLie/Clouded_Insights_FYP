@@ -99,7 +99,7 @@ class PNLEntry(db.Model):
             'pnl_code': self.pnl_code,
             'business_unit': self.business_unit,
             'month': self.month.strftime('%m-%Y'),
-            'value': self.value
+            'value': float(self.value)
         }
     
 class PNLForecast(db.Model):
@@ -111,8 +111,8 @@ class PNLForecast(db.Model):
 
     def json(self):
         return {
-            'pnl_code': self.code,
+            'pnl_code': self.pnl_code,
             'business_unit': self.business_unit,
             'month': self.month.strftime('%m-%Y'),
-            'value': self.value
+            'value': float(self.value)
         }
