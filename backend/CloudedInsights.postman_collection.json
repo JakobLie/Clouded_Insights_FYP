@@ -1,0 +1,489 @@
+{
+	"info": {
+		"_postman_id": "f217c849-bcfe-49d1-9be9-fd8b42b4aac2",
+		"name": "CloudedInsights",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "30767945"
+	},
+	"item": [
+		{
+			"name": "Employee - Get All",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5000/employee/all/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"employee",
+						"all",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Employee - Get by ID",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5000/employee/id/abcd-abcd-abcd/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"employee",
+						"id",
+						"abcd-abcd-abcd",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Employee - Get by Email",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5000/employee/email/jakob%40tsh.com.sg/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"employee",
+						"email",
+						"jakob%40tsh.com.sg",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Employee - Authenticate",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"email\":\"jakob@tsh.com.sg\",\r\n    \"password\":\"hashed_password_1\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5000/employee/authenticate/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"employee",
+						"authenticate",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Parameter - Get All by Employee ID",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5000/parameter/all/abcd-abcd-abcd/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"parameter",
+						"all",
+						"abcd-abcd-abcd",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Parameter - Get Latest by Employee ID Copy",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5000/parameter/latest/abcd-abcd-abcd",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"parameter",
+						"latest",
+						"abcd-abcd-abcd"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Parameter - Set New (Batch)",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"employee_id\": \"abcd-abcd-abcd\",\r\n    \"parameters\":{\r\n        \"Net Profit Margin\": 0.15,\r\n        \"Receivables Turnover\": 0.30,\r\n        \"Cost Budget\": 23000,\r\n        \"New Target\": 21.33,\r\n        \"New Target 2\": 0.55\r\n    }\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5000/parameter/batch/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"parameter",
+						"batch",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Category - Get All",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"employee_id\": \"abcd-abcd-abcd\",\r\n    \"parameters\":{\r\n        \"Net Profit Margin\": 0.15,\r\n        \"Receivables Turnover\": 0.30,\r\n        \"Cost Budget\": 23000,\r\n        \"New Target\": 21.33,\r\n        \"New Target 2\": 0.55\r\n    }\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5000/category/all/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"category",
+						"all",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Entry - Get by Code & BU",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5000/entry/individual/5000-A001/bb1/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"entry",
+						"individual",
+						"5000-A001",
+						"bb1",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Entry - Last 12 Months Sales by BU",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5000/entry/sales/bb1/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"entry",
+						"sales",
+						"bb1",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Entry - Last 12 Months Cost by BU",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5000/entry/cost/bb1/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"entry",
+						"cost",
+						"bb1",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Forecast - Get by Code & BU",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5000/forecast/individual/5000-A001/bb1/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"forecast",
+						"individual",
+						"5000-A001",
+						"bb1",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Forecast - Next 3 Months Sales by BU",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5000/forecast/sales/bb1/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"forecast",
+						"sales",
+						"bb1",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Forecast - Next 3 Months Cost by BU",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5000/forecast/cost/bb1/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"forecast",
+						"cost",
+						"bb1",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "KPI - Get Last 12 Months (Profit)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5000/kpi/profit/bb1/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"kpi",
+						"profit",
+						"bb1",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "KPI - Get Last 12 Months (Sales)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5000/kpi/sales/bb1/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"kpi",
+						"sales",
+						"bb1",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "KPI - Get Last 12 Months (Cost)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5000/kpi/cost/bb1/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"kpi",
+						"cost",
+						"bb1",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "KPI - Get Next 3 Months (Profit)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5000/kpi/f_profit/bb1/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"kpi",
+						"f_profit",
+						"bb1",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "KPI - Get Next 3 Months (Sales)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5000/kpi/f_sales/bb1/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"kpi",
+						"f_sales",
+						"bb1",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "KPI - Get Next 3 Months (Cost)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5000/kpi/f_cost/bb1/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"kpi",
+						"f_cost",
+						"bb1",
+						""
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
