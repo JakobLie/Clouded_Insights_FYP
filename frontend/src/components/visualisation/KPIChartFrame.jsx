@@ -40,8 +40,8 @@ export default function KPIChartFrame({ chartData, chartTargetValue, className }
           <ReferenceLine y={chartTargetValue} stroke="red" strokeOpacity="0.3" strokeDasharray="7 7">
             <Label value={`Target: ${chartTargetValue}`} position="insideRight" />
           </ReferenceLine>
-          <Line type="natural" dataKey="Historical" stroke="#8884d8" activeDot={{ r: 8 }} strokeLinecap="round" />
-          <Line type="natural" dataKey="Forecasted" stroke="#d277f0ff" activeDot={{ r: 8 }} strokeLinecap="round" strokeDasharray="7 7" />
+          <Line type="linear" dataKey="Historical" stroke="#8884d8" activeDot={{ r: 8 }} strokeLinecap="round" />
+          <Line type="linear" dataKey="Forecasted" stroke="#d277f0ff" activeDot={{ r: 8 }} strokeLinecap="round" strokeDasharray="7 7" />
         </LineChart>
       </ResponsiveContainer>
     </div>

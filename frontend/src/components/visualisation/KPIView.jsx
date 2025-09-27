@@ -117,7 +117,7 @@ export default function KPIView({
             <div
               className={`
                 space-y-3
-                md:max-h-[${activeTab === "Profit" ? "450px" : "480px"}] md:overflow-y-auto md:pr-2 md:pl-1 pt-3 pb-1
+                md:max-h-[480px] md:overflow-y-auto md:pr-2 md:pl-1 pt-3 pb-1
                 md:scroll-smooth md:snap-y md:snap-mandatory
                 md:overscroll-contain
               `}

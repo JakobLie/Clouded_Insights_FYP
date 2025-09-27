@@ -7,10 +7,45 @@ export default function KPITable({ defaultKPIValues, pastTargetsOrderedList, onC
   const EXCLUDE = new Set(["Sales Target", "Cost Budget", "Input Date"]);
   const KPI_KEYS = Object.keys(defaultKPIValues || {}).filter(k => !EXCLUDE.has(k));
 
-  // Form state for ALL targets
-  const [targetFormData, setTargetsFormData] = useState({});
-  
-  
+  // // Form state for ALL targets
+  // const [targetFormData, setTargetsFormData] = useState({});
+
+  // test funcrtion to see if API reqs to backend function properly
+  // function PushButton() {
+  //   // Example: POST request with fetch
+  //   fetch("http://localhost:5000/parameter/batch/", {
+  //     method: "POST", // HTTP method
+  //     headers: {
+  //       "Content-Type": "application/json" // tell server we're sending JSON
+  //     },
+  //     body: JSON.stringify({
+  //       "employee_id": "abcd-abcd-abcd",
+  //       "parameters": {
+  //         "Net Profit Margin": 0.15,
+  //         "Receivables Turnover": 0.40,
+  //         "Cost Budget": 23100,
+  //         "New Target": 21.33,
+  //         "New Target 2": 0.55,
+  //         "New Target 3": 1010,
+  //         "NEW TARGET !@#$": 123456789.12345
+  //       }
+  //     }) // request body must be a string (e.g. JSON.stringify for JSON)
+  //   })
+  //     .then(response => {
+  //       if (!response.ok) {
+  //         throw new Error("Network response was not ok " + response.statusText);
+  //       }
+  //       return response.json(); // parse JSON response
+  //     })
+  //     .then(data => {
+  //       console.log("Success:", data);
+  //     })
+  //     .catch(error => {
+  //       console.error("Error:", error);
+  //     });
+  // }
+
+
 
   // Local input state (user is editing a NEW row), initialise with default/latest targets
   const [salesTarget, setSalesTarget] = useState(defaultKPIValues["Sales Target"]);
@@ -92,6 +127,10 @@ export default function KPITable({ defaultKPIValues, pastTargetsOrderedList, onC
     <section className="rounded-xl">
       {/* Scroll container */}
       <div className="overflow-x-auto rounded-xl">
+        {/* <button onClick={PushButton}>
+          PUSH ME
+        </button> */}
+
         <table className="min-w-max w-full text-sm ">
           {/* Sticky header */}
           <thead className="bg-slate-600 text-white sticky top-0 ">
@@ -108,6 +147,8 @@ export default function KPITable({ defaultKPIValues, pastTargetsOrderedList, onC
               <th className="text-left whitespace-nowrap">Input Date</th>
             </tr>
           </thead>
+
+
 
           <tbody className="[&>tr>td]:px-4 [&>tr>td]:py-3 text-center">
             {/* Input row */}

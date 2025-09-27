@@ -1,4 +1,4 @@
-import NotificationItem from "@/components/NotificationItem";
+import NotificationItem from "@/app/(app)/notifications/NotificationItem";
 
 const SAMPLE = [
   {
