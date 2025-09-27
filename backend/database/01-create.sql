@@ -15,16 +15,19 @@ CREATE TABLE employee (
 
 CREATE TABLE parameter (
     employee_id VARCHAR(20) REFERENCES employee(id),
-    name VARCHAR(100) NOT NULL,
-    value NUMERIC(15, 2) NOT NULL,
+    name VARCHAR(100),
+    created_date DATE DEFAULT CURRENT_DATE,
+    value NUMERIC(15, 4) NOT NULL,
     is_notified BOOLEAN DEFAULT FALSE,
-    PRIMARY KEY (employee_id, name)
+    PRIMARY KEY (employee_id, name, created_date)
 );
 
 CREATE TABLE notification (
     id SERIAL PRIMARY KEY,
     employee_id VARCHAR(20) REFERENCES employee(id),
-    message TEXT NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    subject VARCHAR(255) NOT NULL,
+    body TEXT NOT NULL,
     is_read BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP    
 );
@@ -32,7 +35,7 @@ CREATE TABLE notification (
 CREATE TABLE pnl_category (
     code VARCHAR(15) PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
-    category VARCHAR(50) NOT NULL
+    description TEXT NOT NULL
 );
 
 CREATE TABLE pnl_entry (
@@ -48,6 +51,5 @@ CREATE TABLE pnl_forecast (
     business_unit VARCHAR(10) REFERENCES business_unit(alias),
     month DATE,
     value NUMERIC(15, 2) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (pnl_code, business_unit, month)
 );

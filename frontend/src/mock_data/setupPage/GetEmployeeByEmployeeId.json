@@ -1,0 +1,11 @@
+{
+    "data": {
+        "id": "12345",
+        "name": "Lie Wie Yong Jakob",
+        "email": "jakob.lie.2022@scis.smu.edu.sg",
+        "role": "BU Manager",
+        "business_unit": "BB1",
+        "password_hash": "hashedString",
+        "created_at": "17-09-2025"
+    }
+}

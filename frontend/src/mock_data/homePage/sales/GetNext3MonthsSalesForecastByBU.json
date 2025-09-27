@@ -1,0 +1,29 @@
+{
+    "data": {
+        "keys": [
+            "09-2025",
+            "10-2025",
+            "11-2025"
+        ],
+        "entries": {
+            "09-2025": {
+                "Sales": 2100000,
+                "Return On Sales": 0.31,
+                "Days Sales Outstanding": 0.17,
+                "Receivables Turnover": 0.40
+            },
+            "10-2025": {
+                "Sales": 2400000,
+                "Return On Sales": 0.64,
+                "Days Sales Outstanding": 0.64,
+                "Receivables Turnover": 0.74
+            },
+            "11-2025": {
+                "Sales": 2500000,
+                "Return On Sales": 0.55,
+                "Days Sales Outstanding": 0.40,
+                "Receivables Turnover": 0.40
+            }
+        }
+    }
+}

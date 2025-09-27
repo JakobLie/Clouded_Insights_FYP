@@ -1,0 +1,104 @@
+{
+    "data": {
+        "keys": [
+            "09-2024",
+            "10-2024",
+            "11-2024",
+            "12-2024",
+            "01-2025",
+            "02-2025",
+            "03-2025",
+            "04-2025",
+            "05-2025",
+            "06-2025",
+            "07-2025",
+            "08-2025"
+        ],
+        "entries": {
+            "09-2024": {
+                "Profit": 1100000,
+                "Gross Profit Margin": 0.31,
+                "Operating Profit Margin": 0.12,
+                "Net Profit Margin": 0.43,
+                "Quick Ratio": 0.64
+            },
+            "10-2024": {
+                "Profit": 1300000,
+                "Gross Profit Margin": 0.65,
+                "Operating Profit Margin": 0.65,
+                "Net Profit Margin": 0.72,
+                "Quick Ratio": 0.81
+            },
+            "11-2024": {
+                "Profit": 1400000,
+                "Gross Profit Margin": 0.57,
+                "Operating Profit Margin": 0.46,
+                "Net Profit Margin": 0.46,
+                "Quick Ratio": 0.57
+            },
+            "12-2024": {
+                "Profit": 1200000,
+                "Gross Profit Margin": 0.36,
+                "Operating Profit Margin": 0.72,
+                "Net Profit Margin": 0.81,
+                "Quick Ratio": 0.65
+            },
+            "01-2025": {
+                "Profit": 1400000,
+                "Gross Profit Margin": 0.36,
+                "Operating Profit Margin": 0.36,
+                "Net Profit Margin": 0.57,
+                "Quick Ratio": 0.57
+            },
+            "02-2025": {
+                "Profit": 1500000,
+                "Gross Profit Margin": 0.57,
+                "Operating Profit Margin": 0.57,
+                "Net Profit Margin": 0.65,
+                "Quick Ratio": 0.65
+            },
+            "03-2025": {
+                "Profit": 1300000,
+                "Gross Profit Margin": 0.57,
+                "Operating Profit Margin": 0.57,
+                "Net Profit Margin": 0.46,
+                "Quick Ratio": 0.46
+            },
+            "04-2025": {
+                "Profit": 1600000,
+                "Gross Profit Margin": 0.12,
+                "Operating Profit Margin": 0.12,
+                "Net Profit Margin": 0.24,
+                "Quick Ratio": 0.24
+            },
+            "05-2025": {
+                "Profit": 1600000,
+                "Gross Profit Margin": 0.12,
+                "Operating Profit Margin": 0.91,
+                "Net Profit Margin": 0.81,
+                "Quick Ratio": 0.72
+            },
+            "06-2025": {
+                "Profit": 1500000,
+                "Gross Profit Margin": 0.36,
+                "Operating Profit Margin": 0.46,
+                "Net Profit Margin": 0.57,
+                "Quick Ratio": 0.65
+            },
+            "07-2025": {
+                "Profit": 1400000,
+                "Gross Profit Margin": 0.46,
+                "Operating Profit Margin": 0.36,
+                "Net Profit Margin": 0.46,
+                "Quick Ratio": 0.36
+            },
+            "08-2025": {
+                "Profit": 1400000,
+                "Gross Profit Margin": 0.34,
+                "Operating Profit Margin": 0.12,
+                "Net Profit Margin": 0.24,
+                "Quick Ratio": 0.65
+            }
+        }
+    }
+}
