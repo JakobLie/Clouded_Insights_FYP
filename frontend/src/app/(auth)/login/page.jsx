@@ -8,7 +8,7 @@ export default function Login() {
       <div className="border-b">
         {/* Use <img> to keep GIF animation reliable */}
         <img
-          src="/manufacturing-factory.gif"
+          src="/manufacturing-factory-cropped.gif"
           alt="Factory animation"
           className="
             w-full
