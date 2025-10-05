@@ -5,9 +5,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { formatCurrency } from "@/utils/currency-utils";
-import latestParameters from "@/mock_data/homePage/GetLatestParametersByEmployeeId.json"
-import last12MonthsProfitKPIs from "@/mock_data/homePage/profit/GetLast12MonthsProfitKPIsByBU.json"
-import next3MonthsProfitKPIs from "@/mock_data/homePage/profit/GetNext3MonthsProfitForecastByBU.json"
 
 export default function Profit() {
 
