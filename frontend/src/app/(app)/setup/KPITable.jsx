@@ -3,134 +3,67 @@ import { getCurrentDateFormatted } from "@/utils/time-utils";
 
 export default function KPITable({ defaultKPIValues, pastTargetsOrderedList, onChange }) {
 
-  // before: const KPI_KEYS = Object.keys(defaultKPIValues || {});
   const EXCLUDE = new Set(["Sales Target", "Cost Budget", "Input Date"]);
   const KPI_KEYS = Object.keys(defaultKPIValues || {}).filter(k => !EXCLUDE.has(k));
 
-  // // Form state for ALL targets
-  // const [targetFormData, setTargetsFormData] = useState({});
+  // Single state object for the entire form
+  const [formData, setFormData] = useState({});
 
-  // test funcrtion to see if API reqs to backend function properly
-  // function PushButton() {
-  //   // Example: POST request with fetch
-  //   fetch("http://localhost:5000/parameter/batch/", {
-  //     method: "POST", // HTTP method
-  //     headers: {
-  //       "Content-Type": "application/json" // tell server we're sending JSON
-  //     },
-  //     body: JSON.stringify({
-  //       "employee_id": "abcd-abcd-abcd",
-  //       "parameters": {
-  //         "Net Profit Margin": 0.15,
-  //         "Receivables Turnover": 0.40,
-  //         "Cost Budget": 23100,
-  //         "New Target": 21.33,
-  //         "New Target 2": 0.55,
-  //         "New Target 3": 1010,
-  //         "NEW TARGET !@#$": 123456789.12345
-  //       }
-  //     }) // request body must be a string (e.g. JSON.stringify for JSON)
-  //   })
-  //     .then(response => {
-  //       if (!response.ok) {
-  //         throw new Error("Network response was not ok " + response.statusText);
-  //       }
-  //       return response.json(); // parse JSON response
-  //     })
-  //     .then(data => {
-  //       console.log("Success:", data);
-  //     })
-  //     .catch(error => {
-  //       console.error("Error:", error);
-  //     });
-  // }
-
-
-
-  // Local input state (user is editing a NEW row), initialise with default/latest targets
-  const [salesTarget, setSalesTarget] = useState(defaultKPIValues["Sales Target"]);
-  const [costBudget, setCostBudget] = useState(defaultKPIValues["Cost Budget"]);
-  const [grossProfitMargin, setGrossProfitMargin] = useState(defaultKPIValues["Gross Profit Margin"]);
-  const [operatingProfitMargin, setOperatingProfitMargin] = useState(defaultKPIValues["Operating Profit Margin"]);
-  const [netProfitMargin, setNetProfitMargin] = useState(defaultKPIValues["Net Profit Margin"]);
-  const [quickRatio, setQuickRatio] = useState(defaultKPIValues["Quick Ratio"]);
-  const [returnOnSales, setReturnOnSales] = useState(defaultKPIValues["Return On Sales"]);
-  const [daysSalesOutstanding, setDaysSalesOutstanding] = useState(defaultKPIValues["Days Sales Outstanding"]);
-  const [receivablesTurnover, setReceivablesTurnover] = useState(defaultKPIValues["Receivables Turnover"]);
-  const [costOfGoodsSoldRatio, setCostOfGoodsSoldRatio] = useState(defaultKPIValues["Cost Of Goods Sold Ratio"]);
-  const [daysPayableOutstanding, setDaysPayableOutstanding] = useState(defaultKPIValues["Days Payable Outstanding"]);
-  const [overheadRatio, setOverheadRatio] = useState(defaultKPIValues["Overhead Ratio"]);
-
-  // ---- Initialize KPI inputs from defaults (decimals -> whole % strings)
+  // Initialize form data from defaults
   useEffect(() => {
-    const toPercentInt = (k) =>
-      Number.isFinite(defaultKPIValues[k]) ? String(Math.round(defaultKPIValues[k] * 100)) : "";
+    const initialData = {
+      "Sales Target": defaultKPIValues["Sales Target"] ?? "",
+      "Cost Budget": defaultKPIValues["Cost Budget"] ?? "",
+    };
 
-    setSalesTarget(String(defaultKPIValues["Sales Target"] ?? ""));
-    setCostBudget(String(defaultKPIValues["Cost Budget"] ?? ""));
+    // Convert decimal KPIs to whole percentages for display
+    KPI_KEYS.forEach(key => {
+      const value = defaultKPIValues[key];
+      initialData[key] = Number.isFinite(value) ? Math.round(value * 100) : "";
+    });
 
-    setGrossProfitMargin(toPercentInt("Gross Profit Margin"));
-    setOperatingProfitMargin(toPercentInt("Operating Profit Margin"));
-    setNetProfitMargin(toPercentInt("Net Profit Margin"));
-    setQuickRatio(toPercentInt("Quick Ratio"));
-    setReturnOnSales(toPercentInt("Return On Sales"));
-    setDaysSalesOutstanding(toPercentInt("Days Sales Outstanding"));
-    setReceivablesTurnover(toPercentInt("Receivables Turnover"));
-    setCostOfGoodsSoldRatio(toPercentInt("Cost Of Goods Sold Ratio"));
-    setDaysPayableOutstanding(toPercentInt("Days Payable Outstanding"));
-    setOverheadRatio(toPercentInt("Overhead Ratio"));
+    setFormData(initialData);
   }, [defaultKPIValues]);
 
-  // ---- Lookup so we can `.map` while using separate states
-  const kpiState = {
-    "Gross Profit Margin": [grossProfitMargin, setGrossProfitMargin],
-    "Operating Profit Margin": [operatingProfitMargin, setOperatingProfitMargin],
-    "Net Profit Margin": [netProfitMargin, setNetProfitMargin],
-    "Quick Ratio": [quickRatio, setQuickRatio],
-    "Return On Sales": [returnOnSales, setReturnOnSales],
-    "Days Sales Outstanding": [daysSalesOutstanding, setDaysSalesOutstanding],
-    "Receivables Turnover": [receivablesTurnover, setReceivablesTurnover],
-    "Cost Of Goods Sold Ratio": [costOfGoodsSoldRatio, setCostOfGoodsSoldRatio],
-    "Days Payable Outstanding": [daysPayableOutstanding, setDaysPayableOutstanding],
-    "Overhead Ratio": [overheadRatio, setOverheadRatio],
-  };
-
-  // ---- Helpers to build a single payload for the parent
-  const toNumber = (v) => {
-    const n = Number(String(v ?? "").replace(/[^\d.-]/g, ""));
-    return Number.isFinite(n) ? n : 0;
-  };
-
-  const buildPayload = (overrides = {}) => {
-    // Read current values (overrides take precedence)
-    const readStr = (cur, key) => String(overrides[key] ?? cur ?? "");
-    const payload = {
-      "Sales Target": toNumber(readStr(salesTarget, "Sales Target")),
-      "Cost Budget": toNumber(readStr(costBudget, "Cost Budget")),
-      "Input Date": getCurrentDateFormatted(),
+  // Single change handler for all inputs
+  const handleInputChange = (fieldName, value) => {
+    const updatedData = {
+      ...formData,
+      [fieldName]: value
     };
-    // KPIs: convert whole % back to decimals
-    for (const name of KPI_KEYS) {
-      const [val] = kpiState[name] || [""];
-      payload[name] = toNumber(readStr(val, name)) / 100;
+    setFormData(updatedData);
+
+    // Notify parent with converted values (percentages back to decimals)
+    if (onChange) {
+      const payload = buildPayloadFromForm(updatedData);
+      onChange(payload);
     }
-    return payload;
   };
 
-  // One-liner to set state + notify parent (if provided)
-  const setAndEmit = (setter, keyForPayload) => (v) => {
-    setter(v);
-    onChange && onChange(buildPayload({ [keyForPayload]: v }));
+  // Convert form data to API format
+  const buildPayloadFromForm = (data) => {
+    const toNumber = (v) => {
+      const n = Number(String(v ?? "").replace(/[^\d.-]/g, ""));
+      return Number.isFinite(n) ? n : 0;
+    };
+
+    const payload = {
+      "Sales Target": toNumber(data["Sales Target"]),
+      "Cost Budget": toNumber(data["Cost Budget"]),
+    };
+
+    // Convert percentage inputs back to decimals for KPIs
+    KPI_KEYS.forEach(key => {
+      payload[key] = toNumber(data[key]) / 100;
+    });
+
+    return payload;
   };
 
   return (
     <section className="rounded-xl">
       {/* Scroll container */}
       <div className="overflow-x-auto rounded-xl">
-        {/* <button onClick={PushButton}>
-          PUSH ME
-        </button> */}
-
         <table className="min-w-max w-full text-sm ">
           {/* Sticky header */}
           <thead className="bg-slate-600 text-white sticky top-0 ">
@@ -158,8 +91,8 @@ export default function KPITable({ defaultKPIValues, pastTargetsOrderedList, onC
                   type="number"
                   inputMode="decimal"
                   className="h-10 rounded-md bg-gray-200 px-1 py-2 text-center pl-5 font-semibold"
-                  value={salesTarget ?? ""}
-                  onChange={(e) => setAndEmit(setSalesTarget, "Sales Target")(e.target.value)}
+                  value={formData["Sales Target"] ?? ""}
+                  onChange={(e) => handleInputChange("Sales Target", e.target.value)}
                 />
               </td>
               <td>
@@ -167,21 +100,20 @@ export default function KPITable({ defaultKPIValues, pastTargetsOrderedList, onC
                   type="number"
                   inputMode="decimal"
                   className="h-10 rounded-md bg-gray-200 px-1 py-2 text-center pl-5 font-semibold"
-                  value={costBudget ?? ""}
-                  onChange={(e) => setAndEmit(setCostBudget, "Cost Budget")(e.target.value)}
+                  value={formData["Cost Budget"] ?? ""}
+                  onChange={(e) => handleInputChange("Cost Budget", e.target.value)}
                 />
               </td>
 
               {KPI_KEYS.map((KPIName) => {
-                const [val, setVal] = kpiState[KPIName] || ["", () => { }];
                 return (
                   <td key={KPIName} >
                     <input
                       type="number"
                       inputMode="decimal"
                       className="h-10 rounded-md bg-gray-200 px-1 py-2 text-center pl-5 font-semibold"
-                      value={val ?? ""}
-                      onChange={(e) => setAndEmit(setVal, KPIName)(e.target.value)}
+                      value={formData[KPIName] ?? ""}
+                      onChange={(e) => handleInputChange(KPIName, e.target.value)}
                     />
                   </td>
                 );
@@ -192,8 +124,8 @@ export default function KPITable({ defaultKPIValues, pastTargetsOrderedList, onC
             </tr>
 
             {/* Historical rows */}
-            {(pastTargetsOrderedList || []).map((parameterObject) => (
-              <tr key={parameterObject["Input Date"]} className="border-t">
+            {(pastTargetsOrderedList || []).map((parameterObject, index) => (
+              <tr key={parameterObject["Input Date"] || index} className="border-t">
                 <td className="whitespace-nowrap">
                   {parameterObject["Sales Target"] ?? "—"}
                 </td>
