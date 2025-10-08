@@ -631,6 +631,7 @@ def getNext3MonthsPNLForecasts(bu_alias):
 
 def calculateProfitKPIs(entries):
     output_data = {
+        "Profit": None, #TODO: Very arbitrary, currently just takes all the income minus all the costs
         "Gross Profit Margin": None,
         "Operating Profit Margin": None,
         "Net Profit Margin": None,
@@ -652,6 +653,7 @@ def calculateProfitKPIs(entries):
     all_incomes = sales_revenue + other_incomes - sales_adjustments
 
     # KPI calculations
+    output_data["Profit"] = all_incomes - cogs - all_expenses
     output_data["Gross Profit Margin"] = round((sales_revenue - cogs) / sales_revenue * 100, 4) if sales_revenue != 0 else None
     output_data["Operating Profit Margin"] = round((net_sales - cogs - op_expenses) / net_sales * 100, 4) if net_sales != 0 else None
     output_data["Net Profit Margin"] = round((all_incomes - cogs - all_expenses) / all_incomes * 100, 4) if all_incomes != 0 else None
@@ -661,6 +663,7 @@ def calculateProfitKPIs(entries):
 
 def calculateSalesKPIs(entries):
     output_data = {
+        "Sales": None, #TODO: Very arbitrary, currently just sums all income except "Other Incomes"
         "Return on Sales": None,
         "Days Sales Outstanding (DSO)": None,
         "Receivables Turnover": None
@@ -678,6 +681,7 @@ def calculateSalesKPIs(entries):
     operating_profit = sales_revenue - sales_adjustments - cogs - op_expenses
 
     # KPI calculations
+    output_data["Sales"] = net_sales
     output_data["Return on Sales"] = round(operating_profit / net_sales * 100, 4) if net_sales != 0 else None
     output_data["Days Sales Outstanding (DSO)"] = None
     output_data["Receivables Turnover"] = None
@@ -686,6 +690,7 @@ def calculateSalesKPIs(entries):
 
 def calculateCostKPIs(entries):
     output_data = {
+        "Cost": None, #TODO: Very arbitrary, currently just sums all cogs and expenses
         "COGS Ratio": None,
         "Days Payable Outstanding (DPO)": None,
         "Overhead Ratio": None
@@ -695,12 +700,14 @@ def calculateCostKPIs(entries):
     sales_revenue = sum(value for code, value in entries.items() if code.startswith("5000-") and code not in ["5000-A015", "5000-M004"])
     sales_adjustments = sum(value for code, value in entries.items() if code == '5500')
     cogs = sum(value for code, value in entries.items() if code.startswith('6'))
+    all_expenses = sum(value for code, value in entries.items() if code.startswith('9'))
     overhead_costs = sum(value for code, value in entries.items() if code.startswith('902') or code.startswith('9000-D'))
     
     # intermediate calculations
     net_sales = sales_revenue - sales_adjustments
 
     # KPI calculations
+    output_data["Cost"] = cogs + all_expenses
     output_data["COGS Ratio"] = round(cogs / net_sales * 100, 4) if net_sales != 0 else None
     output_data["Days Payable Outstanding (DPO)"] = None
     output_data["Overhead Ratio"] = round(overhead_costs / net_sales * 100, 4) if net_sales != 0 else None
