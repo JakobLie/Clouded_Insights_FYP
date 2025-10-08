@@ -9,6 +9,7 @@ import { getMonthsLabels } from "@/utils/date-utils";
 
 // Theme Mapping for syncing style of parent container with chosen Left Side Card
 const THEME_MAP = {
+  gray: { panel: "border-gray-300 bg-gray-100", frame: "border-gray-300" },
   yellow: { panel: "border-yellow-300 bg-yellow-100", frame: "border-yellow-300" },
   red: { panel: "border-red-300 bg-red-100", frame: "border-red-300" },
   green: { panel: "border-green-400 bg-green-100", frame: "border-green-400" },

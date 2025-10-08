@@ -95,13 +95,15 @@ export default function CostDrillDown() {
           const percentageDelta = ((upcomingForecastPNL[name] - latestEntryPNL[name]) / latestEntryPNL[name]) * 100;
           const PNLValue = upcomingForecastPNL[name] < 1 ? upcomingForecastPNL[name] * 100 : upcomingForecastPNL[name];
 
+          console.log(percentageDelta);
+
           return {
             title: name,
             lines: [
               { label: "Forecasted", value: `${name === "Cost" ? "SGD" : ""}${formatCurrency(PNLValue)}${name !== "Cost" ? "%" : ""}` },
               { label: `Monthly ${isGrowth ? "Growth" : "Decline"}`, value: `${percentageDelta.toFixed(2)}%` }
             ],
-            accent: percentageDelta >= 0 ? "green" : (percentageDelta <= -5 ? "red" : "yellow")
+            accent: isNaN(percentageDelta) ? "gray" : (percentageDelta >= 0 ? "green" : (percentageDelta <= -5 ? "red" : "yellow"))
           };
         });
 
