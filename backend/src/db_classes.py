@@ -35,23 +35,6 @@ class Employee(db.Model):
         if (password == self.password_hash):
             return True
         return False
-    
-class Parameter(db.Model):
-    __tablename__ = 'parameter'
-    employee_id = db.Column(db.String(20), db.ForeignKey('employee.id'), primary_key=True)
-    name = db.Column(db.String(100), nullable=False, primary_key=True)
-    created_date = db.Column(db.Date, primary_key=True)
-    value = db.Column(db.Numeric(precision=15, scale=2), nullable=False)
-    is_notified = db.Column(db.Boolean, default=False)
-
-    def json(self):
-        return {
-            'employee_id': self.employee_id,
-            'name': self.name,
-            'created_date': self.created_date.strftime('%d-%m-%Y'),
-            'value': float(self.value),
-            'is_notified': self.is_notified
-        }
 
 class Notification(db.Model):
     __tablename__ = 'notification'
@@ -78,12 +61,14 @@ class PNLCategory(db.Model):
     __tablename__ = 'pnl_category'
     code = db.Column(db.String(15), primary_key=True)
     name = db.Column(db.String(100), nullable=False)
+    parent_code = db.Column(db.String(15), db.ForeignKey('pnl_category.code'), nullable=True)
     description = db.Column(db.Text, nullable=True)
 
     def json(self):
         return {
             'code': self.code,
             'name': self.name,
+            'parent_code': self.parent_code,
             'description': self.description
         }
     
@@ -112,6 +97,68 @@ class PNLForecast(db.Model):
     def json(self):
         return {
             'pnl_code': self.pnl_code,
+            'business_unit': self.business_unit,
+            'month': self.month.strftime('%m-%Y'),
+            'value': float(self.value)
+        }
+    
+class Parameter(db.Model):
+    __tablename__ = 'parameter'
+    employee_id = db.Column(db.String(20), db.ForeignKey('employee.id'), primary_key=True)
+    kpi_alias = db.Column(db.String(10), db.ForeignKey('kpi_category.alias'), primary_key=True)
+    month = db.Column(db.Date, primary_key=True)
+    value = db.Column(db.Numeric(15, 4), nullable=False)
+    is_notified = db.Column(db.Boolean, default=False)
+
+    def json(self):
+        return {
+            'employee_id': self.employee_id,
+            'kpi_alias': self.kpi_alias,
+            'month': self.month.strftime('%m-%Y'),
+            'value': float(self.value),
+            'is_notified': self.is_notified
+        }
+    
+class KPICategory(db.Model):
+    __tablename__ = 'kpi_category'
+    alias = db.Column(db.String(10), primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    category = db.Column(db.String(50), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+
+    def json(self):
+        return {
+            'alias': self.alias,
+            'name': self.name,
+            'category': self.category,
+            'description': self.description
+        }
+
+class KPIEntry(db.Model):
+    __tablename__ = 'kpi_entry'
+    kpi_alias = db.Column(db.String(10), db.ForeignKey('kpi_category.alias'), primary_key=True)
+    business_unit = db.Column(db.String(10), db.ForeignKey('business_unit.alias'), primary_key=True)
+    month = db.Column(db.Date, primary_key=True)
+    value = db.Column(db.Numeric(15, 4), nullable=False)
+
+    def json(self):
+        return {
+            'kpi_alias': self.kpi_alias,
+            'business_unit': self.business_unit,
+            'month': self.month.strftime('%m-%Y'),
+            'value': float(self.value)
+        }
+    
+class KPIForecast(db.Model):
+    __tablename__ = 'kpi_forecast'
+    kpi_alias = db.Column(db.String(10), db.ForeignKey('kpi_category.alias'), primary_key=True)
+    business_unit = db.Column(db.String(10), db.ForeignKey('business_unit.alias'), primary_key=True)
+    month = db.Column(db.Date, primary_key=True)
+    value = db.Column(db.Numeric(15, 4), nullable=False)
+
+    def json(self):
+        return {
+            'kpi_alias': self.kpi_alias,
             'business_unit': self.business_unit,
             'month': self.month.strftime('%m-%Y'),
             'value': float(self.value)

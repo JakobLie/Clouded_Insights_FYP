@@ -13,15 +13,6 @@ CREATE TABLE employee (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE parameter (
-    employee_id VARCHAR(20) REFERENCES employee(id),
-    name VARCHAR(100),
-    created_date DATE DEFAULT CURRENT_DATE,
-    value NUMERIC(15, 4) NOT NULL,
-    is_notified BOOLEAN DEFAULT FALSE,
-    PRIMARY KEY (employee_id, name, created_date)
-);
-
 CREATE TABLE notification (
     id SERIAL PRIMARY KEY,
     employee_id VARCHAR(20) REFERENCES employee(id),
@@ -35,6 +26,7 @@ CREATE TABLE notification (
 CREATE TABLE pnl_category (
     code VARCHAR(15) PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
+    parent_code VARCHAR(15) REFERENCES pnl_category(code),
     description TEXT NOT NULL
 );
 
@@ -52,4 +44,36 @@ CREATE TABLE pnl_forecast (
     month DATE,
     value NUMERIC(15, 2) NOT NULL,
     PRIMARY KEY (pnl_code, business_unit, month)
+);
+
+CREATE TABLE parameter (
+    employee_id VARCHAR(20) REFERENCES employee(id),
+    kpi_alias VARCHAR(10) REFERENCES kpi_category(alias),
+    month DATE,
+    value NUMERIC(15, 4) NOT NULL,
+    is_notified BOOLEAN DEFAULT FALSE,
+    PRIMARY KEY (employee_id, kpi_alias, month)
+);
+
+CREATE TABLE kpi_category (
+    alias VARCHAR(10) PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    category VARCHAR(50) NOT NULL,
+    description TEXT
+)
+
+CREATE TABLE kpi_entry (
+    kpi_alias VARCHAR(10) REFERENCES kpi_category(alias),
+    business_unit VARCHAR(10) REFERENCES business_unit(alias),
+    month DATE,
+    value NUMERIC(15,4) NOT NULL,
+    PRIMARY KEY (kpi_alias, business_unit, month)
+);
+
+CREATE TABLE kpi_forecast (
+    kpi_alias VARCHAR(10) REFERENCES kpi_category(alias),
+    business_unit VARCHAR(10) REFERENCES business_unit(alias),
+    month DATE,
+    value NUMERIC(15,4) NOT NULL,
+    PRIMARY KEY (kpi_alias, business_unit, month)
 );

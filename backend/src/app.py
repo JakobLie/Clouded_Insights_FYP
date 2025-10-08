@@ -1,10 +1,12 @@
 from datetime import datetime, timedelta
+import re
 from dateutil.relativedelta import relativedelta
 from zoneinfo import ZoneInfo
 import os
 from dotenv import load_dotenv
 
 from flask import Flask, jsonify, request
+import pandas as pd
 from sqlalchemy import or_, and_
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
@@ -572,6 +574,221 @@ def getForecasted3MonthsCostKPIsByBU(bu_alias):
             "data": output_data
         }
     ), 200
+
+######################## LOAD DATA ########################
+@app.route("/load_data/<month:str>", methods=['POST'])
+def loadData(month):
+    input_file = request.files.get('file')
+
+    df = reportToDataFrame(input_file)
+    output_data = {
+        "business_units": [],
+        "pnl_categories": [],
+        "pnl_entries": [],
+        "kpi_entries": [],
+        "notifications": []
+    }
+
+    # Insert BUs from header into DB
+    output_data["business_units"] = insertBusinessUnits(list(df.columns)[2:])
+
+    # Insert PNL Categories and Entries
+    indent_standard = len(df["Code"].iloc[0]) - len(df["Code"].iloc[0].lstrip(' '))
+    prev_codes = [None]
+    for i, row in df.iterrows():
+        # Determining parent-child relationship of categories using indentation
+        tier = round( (len(row["Code"]) - len(row["Code"].lstrip(' '))) / indent_standard )
+        if tier >= len(prev_codes):
+            prev_codes.append(row["Code"].strip())
+        else:
+            prev_codes[tier] = row["Code"].strip()
+            prev_codes = prev_codes[:tier+1]
+
+        row["Code"] = row["Code"].strip()
+        output_data["pnl_categories"].append(insertPNLCatPerRow(row, prev_codes[-1]))
+        output_data["pnl_entries"].extend(insertPNLEntriesPerRow(row, month))
+
+    # Calculate and insert KPIs
+    df["Code"] = df["Code"].str.strip() # Strip all whitespaces for Code column
+    bu_kpis = {}
+    for bu in list(df.columns)[2:]:
+        added_kpi = insertKPIEntriesPerBU(df, bu, month) # Insert once and get change log
+        output_data["kpi_entries"].extend(added_kpi) # Add to output data
+        bu_kpis[bu] = { entry.alias:entry.value for entry in added_kpi } # Store KPI - value mappings for each BU for notifications
+    
+    # # Insert notifications for relevant parties (if necessary for current values, if not just do forecast)
+    # for bu in bu_kpis:
+    #     output_data["notifications"].extend(insertNotificationsPerBU(bu, bu_kpis[bu], month))
+
+    try:
+        # db.session.commit() # TODO: Uncomment + comment out next line when ready
+        db.session.rollback() # testing purposes
+        
+        # Trigger Machine Learning retraining and forecast generation upon successful DB modifications
+        triggerMachineLearning()
+
+        return jsonify(
+            {
+                "code": 200,
+                "data": output_data,
+                "message": "Data has been loaded successfully."
+            }
+        ), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify(
+            {
+                "code": 500,
+                "message": f"An error occurred while setting parameters: {str(e)}"
+            }
+        ), 500
+
+def reportToDataFrame(file):
+    # Handle both Excel (.xls,.xlsx,.xlsm) and .csv files
+    ext = os.path.splitext(file)[1].lower()
+
+    if ext == ".csv":
+        df = pd.read_csv(file, header=None, dtype=str)
+    elif ext in [".xls", ".xlsx", ".xlsm"]:
+        df = pd.read_excel(file, sheet_name=0, header=None, dtype=str)
+    else:
+        raise ValueError("Unsupported file format: " + ext)
+
+    # Clean dataframe
+    df.replace(r"^\s*$", pd.NA, regex=True, inplace=True) # replaces empty strings with NaN
+    df = df.dropna(how="all", axis=0) # drop all NaN rows
+    df = df.dropna(how="all", axis=1) # drop all NaN columns
+
+    # Business Units
+    bu_df = df[(df.iloc[:, 0].isna()) & (df.iloc[:, 1].isna())].iloc[0] # retrieve BU header row
+    bu_df[[0,1]] = ["Code","Name"] # adjust BU row to use as header
+    bu_df[findSumColumn(bu_df)] = "TOTAL"
+    df.columns = bu_df # use BU row as header
+
+    # Further clean dataframe for PNLCategory and PNLEntry
+    df = df.loc[:, df.columns.notna()] # drop NaN header columns
+    df = df.dropna(subset=["Code", "Name"]) # drop rows without Code or Name filled
+
+    return df
+
+def findSumColumn(series):
+    possible_values = ["ytd","yeartodate","total","totals"]
+    i = 0
+    for value in series:
+        if type(value) is not str:
+            i += 1
+            continue
+        value = re.sub(r"[^A-Za-z]+", "", value).lower()
+        if value in possible_values:
+            return i
+        i += 1
+    return None
+
+def insertBusinessUnits(series):
+    output_bus = []
+    for val in series:
+        change_status = "unchanged"
+
+        # Retrieve business unit
+        print(f"Checking database if BU exists: {val}")
+        bu = db.session.scalars(
+            db.select(db_classes.BusinessUnit)
+            .filter_by(alias=val)
+        ).first()
+
+        if bu:
+            print(f"\tExisting BU found, no action required: {bu.alias} - {bu.name}")
+        else:
+            print(f"\tNo existing BU found, proceeding to create: {val} - {val}")
+            bu = db_classes.BusinessUnit(
+                alias=val,
+                name=val
+            )
+            db.session.add(bu)
+            change_status = "created"
+        out_bu = bu.json()
+        out_bu.update({"change_status": change_status})
+        output_bus.append(out_bu)
+    return output_bus
+
+def insertPNLCatPerRow(series, parent_code = None):
+    change_status = "unchanged"
+    
+    print(f"Checking database if PNL Category exists: {series["Code"]}")
+    pnl_cat = db.session.scalars(
+        db.select(db_classes.PNLCategory)
+        .filter_by(code=series["Code"])
+    ).first()
+
+    if pnl_cat:
+        print(f"\tExisting PNL Category found: {pnl_cat.code} - {pnl_cat.name}")
+        if pnl_cat.name == series["Name"]:
+            print(f"\t\tName matches, no action required.")
+        else:
+            print(f"\t\tName mismatch, updating name: -> {series["Name"]}")
+            pnl_cat.name = series["Name"]
+            change_status = "updated"
+    else:
+        print(f"\tNo existing PNL Category found, proceeding to create: {series["Code"]} - {series["Name"]}")
+        pnl_cat = db_classes.PNLCategory(
+            code=series["Code"],
+            name=series["Name"],
+            description = None,
+            parent_code = parent_code
+        )
+        db.session.add(pnl_cat)
+        change_status = "created"
+
+    output_cat = pnl_cat.json()
+    output_cat.update({"change_status": change_status})
+    return output_cat
+
+def insertPNLEntriesPerRow(series, month_str):
+    month = datetime.strptime(month_str, "%m-%Y").date()
+    output_entries = []
+
+    for bu, val in series.index[2:].items(): # skip Code and Name
+        change_status = "unchanged"
+
+        print(f"Checking database if PNL Entry exists: {series["Code"]} - {bu} - {month}")
+        pnl_entry = db.session.scalars(
+            db.select(db_classes.PNLEntry)
+            .filter_by(pnl_code=series["Code"], business_unit=bu, month=month)
+        ).first()
+
+        if pnl_entry:
+            print(f"\tExisting PNL Entry found: {pnl_entry.pnl_code} - {pnl_entry.business_unit} - {pnl_entry.month}")
+            if pnl_entry.value == val:
+                print(f"\t\tValue matches, no action required.")
+            else:
+                print(f"\t\tValue mismatch, updating value: -> {val}")
+                pnl_entry.value = val
+                change_status = "updated"
+        else:
+            print(f"\tNo existing PNL Entry found, proceeding to create: {series["Code"]} - {bu} - {month} - {val}")
+            pnl_entry = db_classes.PNLEntry(
+                pnl_code=series["Code"],
+                business_unit=bu,
+                month=month,
+                value=val
+            )
+            db.session.add(pnl_entry)
+            change_status = "created"
+
+        output_entry = pnl_entry.json()
+        output_entry.update({"change_status": change_status})
+        output_entries.append(output_entry)
+
+    return output_entries
+
+def insertKPIEntriesPerBU(df, month_str): #TODO
+    pass
+
+def insertNotificationsPerBU(bu_alias, kpi_dict, month_str): #TODO
+    pass
+
+def triggerMachineLearning(): #TODO send message to ML service
+    pass
 
 ######################## Helper Functions ########################
 # General
