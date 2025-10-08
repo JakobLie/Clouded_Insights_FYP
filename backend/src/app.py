@@ -654,9 +654,9 @@ def calculateProfitKPIs(entries):
 
     # KPI calculations
     output_data["Profit"] = all_incomes - cogs - all_expenses
-    output_data["Gross Profit Margin"] = round((sales_revenue - cogs) / sales_revenue * 100, 4) if sales_revenue != 0 else None
-    output_data["Operating Profit Margin"] = round((net_sales - cogs - op_expenses) / net_sales * 100, 4) if net_sales != 0 else None
-    output_data["Net Profit Margin"] = round((all_incomes - cogs - all_expenses) / all_incomes * 100, 4) if all_incomes != 0 else None
+    output_data["Gross Profit Margin"] = round((sales_revenue - cogs) / sales_revenue * 100, 4) if sales_revenue != 0 else 0.123
+    output_data["Operating Profit Margin"] = round((net_sales - cogs - op_expenses) / net_sales * 100, 4) if net_sales != 0 else 0.123
+    output_data["Net Profit Margin"] = round((all_incomes - cogs - all_expenses) / all_incomes * 100, 4) if all_incomes != 0 else 0.123
     output_data["Quick Ratio"] = 0.123
 
     return output_data
@@ -664,8 +664,6 @@ def calculateProfitKPIs(entries):
 def calculateSalesKPIs(entries):
     output_data = {
         "Sales": None, #TODO: Very arbitrary, currently just sums all income except "Other Incomes"
-        "Return on Sales": None,
-        "Days Sales Outstanding (DSO)": None,
         "Return On Sales": None,
         "Days Sales Outstanding": None,
         "Receivables Turnover": None
@@ -684,9 +682,6 @@ def calculateSalesKPIs(entries):
 
     # KPI calculations
     output_data["Sales"] = net_sales
-    output_data["Return on Sales"] = round(operating_profit / net_sales * 100, 4) if net_sales != 0 else None
-    output_data["Days Sales Outstanding (DSO)"] = None
-    output_data["Receivables Turnover"] = None
     output_data["Return On Sales"] = round(operating_profit / net_sales * 100, 4) if net_sales != 0 else 0.00
     output_data["Days Sales Outstanding"] = 0.123
     output_data["Receivables Turnover"] = 0.123
@@ -696,8 +691,6 @@ def calculateSalesKPIs(entries):
 def calculateCostKPIs(entries):
     output_data = {
         "Cost": None, #TODO: Very arbitrary, currently just sums all cogs and expenses
-        "COGS Ratio": None,
-        "Days Payable Outstanding (DPO)": None,
         "Cost Of Goods Sold Ratio": None,
         "Days Payable Outstanding": None,
         "Overhead Ratio": None
@@ -715,11 +708,9 @@ def calculateCostKPIs(entries):
 
     # KPI calculations
     output_data["Cost"] = cogs + all_expenses
-    output_data["COGS Ratio"] = round(cogs / net_sales * 100, 4) if net_sales != 0 else None
-    output_data["Days Payable Outstanding (DPO)"] = None
-    output_data["Cost Of Goods Sold Ratio"] = round(cogs / net_sales * 100, 4) if net_sales != 0 else None
+    output_data["Cost Of Goods Sold Ratio"] = round(cogs / net_sales * 100, 4) if net_sales != 0 else 0.123
     output_data["Days Payable Outstanding"] = 0.123
-    output_data["Overhead Ratio"] = round(overhead_costs / net_sales * 100, 4) if net_sales != 0 else None
+    output_data["Overhead Ratio"] = round(overhead_costs / net_sales * 100, 4) if net_sales != 0 else 0.123
 
     return output_data
 
