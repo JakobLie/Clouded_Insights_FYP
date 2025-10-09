@@ -113,7 +113,18 @@ export default function Sales() {
           };
         });
 
-        setSalesCards(cards);
+        // Sort cards: Profit/Cost first, then red, yellow, green
+        const sortedCards = cards.sort((a, b) => {
+          // Profit/Cost always comes first
+          if (a.title === "Profit") return -1;
+          if (b.title === "Profit") return 1;
+
+          // Then sort by accent: red, yellow, green
+          const accentOrder = { red: 0, yellow: 1, green: 2, gray: 3 };
+          return accentOrder[a.accent] - accentOrder[b.accent];
+        });
+
+        setSalesCards(sortedCards);
 
       } catch (error) {
         if (error.name === 'AbortError') {

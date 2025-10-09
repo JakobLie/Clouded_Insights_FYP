@@ -89,13 +89,27 @@ export default function CostDrillDown() {
 
         // Create cost cards
         const costPNLNames = Object.keys(latestEntryPNL);
-        setCostPNLNames(costPNLNames)
         const cards = costPNLNames.map((name) => {
-          const isGrowth = latestEntryPNL[name] <= upcomingForecastPNL[name];
-          const percentageDelta = ((upcomingForecastPNL[name] - latestEntryPNL[name]) / latestEntryPNL[name]) * 100;
-          const PNLValue = upcomingForecastPNL[name] < 1 ? upcomingForecastPNL[name] * 100 : upcomingForecastPNL[name];
 
-          console.log(percentageDelta);
+          const latestValue = latestEntryPNL[name];
+          const forecastValue = upcomingForecastPNL[name];
+
+          // Check if values are missing or zero
+          if (latestValue === undefined || forecastValue === undefined ||
+            latestValue === 0 || forecastValue === 0) {
+            return {
+              title: name,
+              lines: [
+                { label: "Forecasted", value: "N/A" },
+                { label: "Monthly Change", value: "N/A" }
+              ],
+              accent: "gray"
+            };
+          }
+
+          const isGrowth = latestValue <= forecastValue;
+          const percentageDelta = ((forecastValue - latestValue) / latestValue) * 100;
+          const PNLValue = forecastValue < 1 ? forecastValue * 100 : forecastValue;
 
           return {
             title: name,
@@ -103,11 +117,22 @@ export default function CostDrillDown() {
               { label: "Forecasted", value: `${name === "Cost" ? "SGD" : ""}${formatCurrency(PNLValue)}${name !== "Cost" ? "%" : ""}` },
               { label: `Monthly ${isGrowth ? "Growth" : "Decline"}`, value: `${percentageDelta.toFixed(2)}%` }
             ],
-            accent: isNaN(percentageDelta) ? "gray" : (percentageDelta >= 0 ? "green" : (percentageDelta <= -5 ? "red" : "yellow"))
+            // Accent logic is reversed for cost, so a negative percentageDelta is green as cost is going down
+            accent: isNaN(percentageDelta) ? "gray" : (percentageDelta <= 0 ? "green" : (percentageDelta >= 5 ? "red" : "yellow"))
           };
         });
 
-        setCostCards(cards);
+        // Sort cards: red, yellow, green, gray
+        const sortedCards = cards.sort((a, b) => {
+          const accentOrder = { red: 0, yellow: 1, green: 2, gray: 3 };
+          return accentOrder[a.accent] - accentOrder[b.accent];
+        });
+
+        // Update the cost PNL names to match the sorted order (After sorting)
+        const sortedCostPNLNames = sortedCards.map(card => card.title);
+
+        setCostCards(sortedCards);
+        setCostPNLNames(sortedCostPNLNames)
 
       } catch (error) {
         if (error.name === 'AbortError') {

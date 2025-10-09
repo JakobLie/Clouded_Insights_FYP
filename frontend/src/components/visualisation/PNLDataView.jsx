@@ -24,7 +24,7 @@ export default function PNLDataView({
 }) {
 
   const [currentRange, setCurrentRange] = useState("6M");
-  const [currentPNLDataName, setCurrentPNLDataName] = useState(PNLDataNames[0]) // First name in list is selected to display graph
+  const [currentPNLDataName, setCurrentPNLDataName] = useState("") // First name in list is selected to display graph
   const [chartData, setChartData] = useState([]);
 
   const combinedPNLDataOrderedList = [...historicalPNLDataOrderedList, ...forecastedPNLDataOrderedList];
@@ -46,10 +46,15 @@ export default function PNLDataView({
     setChartData(rangedChartData);
   }
 
-  // Initial chart data based off activeTab ("Profit"/"Sales"/"Cost")
+  // Initial chart data - wait for data to load and select first card
   useEffect(() => {
-    updateChartData(currentPNLDataName, combinedPNLDataOrderedList, currentRange);
-  }, []);
+    if (leftCards.length > 0 && combinedPNLDataOrderedList.length > 0 && !currentPNLDataName) {
+      // Select the first card (which is now sorted)
+      const firstCardName = leftCards[0].title;
+      setCurrentPNLDataName(firstCardName);
+      updateChartData(firstCardName, combinedPNLDataOrderedList, currentRange);
+    }
+  }, [leftCards, historicalPNLDataOrderedList, forecastedPNLDataOrderedList]);
 
   // Click handler for cards
   function handleSelectCard(card) {
@@ -60,8 +65,8 @@ export default function PNLDataView({
   }
 
   // Handle style of parent container containing graphs and cards
-  const currentAccent = leftCards.find(c => c.title === currentPNLDataName)?.accent ?? "yellow";
-  const theme = THEME_MAP[currentAccent] ?? THEME_MAP.yellow;
+  const currentAccent = leftCards.find(c => c.title === currentPNLDataName)?.accent ?? "gray";
+  const theme = THEME_MAP[currentAccent] ?? THEME_MAP.gray;
 
   return (
     <main className="mx-auto max-w-6xl p-4 sm:p-6 space-y-4">

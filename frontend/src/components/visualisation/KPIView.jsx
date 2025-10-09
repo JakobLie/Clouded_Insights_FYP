@@ -11,6 +11,7 @@ import { toNumber } from "@/utils/number-utils";
 
 // Theme Mapping for syncing style of parent container with chosen Left Side Card
 const THEME_MAP = {
+  gray: { panel: "border-gray-300 bg-gray-100", frame: "border-gray-300" },
   yellow: { panel: "border-yellow-300 bg-yellow-100", frame: "border-yellow-300" },
   red: { panel: "border-red-300 bg-red-100", frame: "border-red-300" },
   green: { panel: "border-green-400 bg-green-100", frame: "border-green-400" },
@@ -57,6 +58,9 @@ export default function KPIView({
 
   // Initial chart data based off activeTab ("Profit"/"Sales"/"Cost")
   useEffect(() => {
+    // Wait until we have cards and data
+    if (leftCards.length === 0 || combinedKPIsOrderedList.length === 0) return;
+
     const salesTarget = targets["Sales Target"];
     const costBudget = targets["Cost Budget"];
     const profitTarget = salesTarget - costBudget;
@@ -69,8 +73,12 @@ export default function KPIView({
       setCurrentTargetValue(profitTarget);
     }
 
+    // Set the current KPI name to the first card (which should be Profit/Cost/Sales)
+    const firstCardName = leftCards[0]?.title || activeTab;
+    setCurrentKPIName(firstCardName);
+
     updateChartData(currentKPIName, combinedKPIsOrderedList, currentRange);
-  }, []);
+  }, [leftCards, targets, historicalKPIsOrderedList, forecastedKPIsOrderedList]);
 
   // Click handler for cards
   function handleSelectCard(card) {
@@ -83,8 +91,8 @@ export default function KPIView({
   }
 
   // Handle style of parent container containing graphs and cards
-  const currentAccent = leftCards.find(c => c.title === currentKPIName)?.accent ?? "yellow";
-  const theme = THEME_MAP[currentAccent] ?? THEME_MAP.yellow;
+  const currentAccent = leftCards.find(c => c.title === currentKPIName)?.accent ?? "gray";
+  const theme = THEME_MAP[currentAccent] ?? THEME_MAP.gray;
 
   const tabLinks = [
     { href: "/profit", label: "Profit" },
