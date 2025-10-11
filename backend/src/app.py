@@ -7,12 +7,13 @@ from dotenv import load_dotenv
 
 from flask import Flask, jsonify, request
 import pandas as pd
-from sqlalchemy import or_, and_
+from sqlalchemy import or_, and_, func, select
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 
 import db_classes
 
+pd.set_option('display.max_columns', None)
 load_dotenv() # only for local development with .env file >> loads variables into system environment
 
 app = Flask(__name__)
@@ -122,16 +123,16 @@ def authenticateEmployee():
 def getParametersByEmployeeId(employee_id):
     parameters = db.session.scalars(db.select(db_classes.Parameter)
         .filter_by(employee_id=employee_id)
-        .order_by(db_classes.Parameter.created_date)
+        .order_by(db_classes.Parameter.month)
         ).all()
 
     output_data = {'keys': [], 'parameters': {}} # convert to appropriate output format
     for param in parameters:
         param = param.json()
-        if param['created_date'] not in output_data['keys']:
-            output_data['keys'].append(param['created_date'])
-            output_data['parameters'][param['created_date']] = {}
-        output_data['parameters'][param['created_date']][param['name']] = param['value']
+        if param['month'] not in output_data['keys']:
+            output_data['keys'].append(param['month'])
+            output_data['parameters'][param['month']] = {}
+        output_data['parameters'][param['month']][param['kpi_alias']] = param['value']
 
     if output_data:
         return jsonify(
@@ -151,7 +152,7 @@ def getParametersByEmployeeId(employee_id):
 def getLatestParametersByEmployeeId(employee_id):
     parameters = db.session.scalars(db.select(db_classes.Parameter)
         .filter_by(employee_id=employee_id)
-        .order_by(db_classes.Parameter.created_date.desc())
+        .order_by(db_classes.Parameter.month.desc())
         ).all()
 
     output_data = {} # convert to appropriate output format
@@ -159,10 +160,10 @@ def getLatestParametersByEmployeeId(employee_id):
     for param in parameters:
         param = param.json()
         if latest_date is None: # use first date as latest date
-            latest_date = param['created_date']
-        if param['created_date'] != latest_date: # stop when date changes
+            latest_date = param['month']
+        if param['month'] != latest_date: # stop when date changes
             break
-        output_data[param['name']] = param['value']
+        output_data[param['kpi_alias']] = param['value']
 
     if output_data:
         return jsonify(
@@ -199,8 +200,8 @@ def setNewParameters():
         parameter = db.session.scalars(
             db.select(db_classes.Parameter)
             .filter_by(employee_id=data['employee_id'])
-            .filter_by(name=param)
-            .filter_by(created_date=current_date)
+            .filter_by(kpi_alias=param)
+            .filter_by(month=current_date)
         ).first()
 
         if parameter:
@@ -213,8 +214,8 @@ def setNewParameters():
             print(f"No existing parameter found, proceeding to create \"{param}: {val}\"...")
             parameter = db_classes.Parameter(
                 employee_id=data['employee_id'],
-                name=param,
-                created_date=current_date,
+                kpi_alias=param,
+                month=current_date,
                 value=val
             )
             db.session.add(parameter)
@@ -576,9 +577,9 @@ def getForecasted3MonthsCostKPIsByBU(bu_alias):
     ), 200
 
 ######################## LOAD DATA ########################
-@app.route("/load_data/<month:str>", methods=['POST'])
+@app.route("/load_data/<month>/", methods=['POST'])
 def loadData(month):
-    input_file = request.files.get('file')
+    input_file = request.files.get('pnl_report')
 
     df = reportToDataFrame(input_file)
     output_data = {
@@ -586,13 +587,16 @@ def loadData(month):
         "pnl_categories": [],
         "pnl_entries": [],
         "kpi_entries": [],
-        "notifications": []
+        "parameters": []
     }
+
+    # Populate 3 months ahead Parameters in DB
+    output_data["parameters"] = insertNext3MonthsDefaultParameters(month)
 
     # Insert BUs from header into DB
     output_data["business_units"] = insertBusinessUnits(list(df.columns)[2:])
 
-    # Insert PNL Categories and Entries
+    # Insert PNL Categories and Entries into DB
     indent_standard = len(df["Code"].iloc[0]) - len(df["Code"].iloc[0].lstrip(' '))
     prev_codes = [None]
     for i, row in df.iterrows():
@@ -603,35 +607,32 @@ def loadData(month):
         else:
             prev_codes[tier] = row["Code"].strip()
             prev_codes = prev_codes[:tier+1]
+        parent = prev_codes[tier-1]
 
         row["Code"] = row["Code"].strip()
-        output_data["pnl_categories"].append(insertPNLCatPerRow(row, prev_codes[-1]))
+        output_data["pnl_categories"].append(insertPNLCatPerRow(row, parent))
         output_data["pnl_entries"].extend(insertPNLEntriesPerRow(row, month))
 
-    # Calculate and insert KPIs
+    # Calculate and insert KPIs into DB
     df["Code"] = df["Code"].str.strip() # Strip all whitespaces for Code column
     bu_kpis = {}
     for bu in list(df.columns)[2:]:
-        added_kpi = insertKPIEntriesPerBU(df, bu, month) # Insert once and get change log
-        output_data["kpi_entries"].extend(added_kpi) # Add to output data
-        bu_kpis[bu] = { entry.alias:entry.value for entry in added_kpi } # Store KPI - value mappings for each BU for notifications
-    
-    # # Insert notifications for relevant parties (if necessary for current values, if not just do forecast)
-    # for bu in bu_kpis:
-    #     output_data["notifications"].extend(insertNotificationsPerBU(bu, bu_kpis[bu], month))
+        added_kpis = insertKPIEntriesPerBU(df, bu, month) # Insert once and get change log
+        output_data["kpi_entries"].extend(added_kpis) # Add to output data
+        bu_kpis[bu] = { entry["kpi_alias"]:entry["value"] for entry in added_kpis } # Store KPI - value mappings for each BU for notifications
 
     try:
-        # db.session.commit() # TODO: Uncomment + comment out next line when ready
-        db.session.rollback() # testing purposes
+        # db.session.commit()
+        db.session.rollback() # TODO: Remove when ready
         
-        # Trigger Machine Learning retraining and forecast generation upon successful DB modifications
-        triggerMachineLearning()
+        # Trigger Forecast Service
+        triggerForecastService()
 
         return jsonify(
             {
                 "code": 200,
                 "data": output_data,
-                "message": "Data has been loaded successfully."
+                "message": "Data has been loaded successfully. :) Triggering Machine Learning retraining and forecast generation..."
             }
         ), 200
     except Exception as e:
@@ -642,10 +643,14 @@ def loadData(month):
                 "message": f"An error occurred while setting parameters: {str(e)}"
             }
         ), 500
-
+    
+# Helper Methods
 def reportToDataFrame(file):
+    if not file:
+        raise ValueError("No file provided")
+
     # Handle both Excel (.xls,.xlsx,.xlsm) and .csv files
-    ext = os.path.splitext(file)[1].lower()
+    ext = os.path.splitext(file.filename)[1].lower()
 
     if ext == ".csv":
         df = pd.read_csv(file, header=None, dtype=str)
@@ -673,22 +678,80 @@ def reportToDataFrame(file):
 
 def findSumColumn(series):
     possible_values = ["ytd","yeartodate","total","totals"]
-    i = 0
-    for value in series:
+    for i, value in series.items():
         if type(value) is not str:
-            i += 1
             continue
         value = re.sub(r"[^A-Za-z]+", "", value).lower()
         if value in possible_values:
             return i
-        i += 1
     return None
+
+@app.route("/test_insertparams/<month_str>/", methods=['POST']) # test purposes only TODO: remove
+def insertNext3MonthsDefaultParameters(month_str):
+    output_data = []
+    current_month = datetime.strptime(month_str, "%m-%Y").date()
+    
+    # Get latest values for each parameter for each employee
+    subquery = select(
+        db_classes.Parameter.employee_id,
+        db_classes.Parameter.kpi_alias,
+        func.max(db_classes.Parameter.month).label('max_month')
+    ).group_by(db_classes.Parameter.employee_id, db_classes.Parameter.kpi_alias).subquery()
+    stmt = select(db_classes.Parameter).join(
+        subquery,
+        (db_classes.Parameter.employee_id == subquery.c.employee_id) &
+        (db_classes.Parameter.kpi_alias == subquery.c.kpi_alias) &
+        (db_classes.Parameter.month == subquery.c.max_month)
+    )
+    latest_params = db.session.scalars(stmt).all()
+    latest_params = { (param.employee_id, param.kpi_alias): param.value for param in latest_params }
+    print(latest_params)
+
+    # Get existing parameters for next 3 months (to avoid modification/error from creating row that exists)
+    existing_params = db.session.scalars(db.select(db_classes.Parameter)
+        .filter(
+            and_(
+                db_classes.Parameter.month > current_month,
+                db_classes.Parameter.month <= current_month + relativedelta(months=3)
+            )
+        )
+        .order_by(db_classes.Parameter.month)
+    ).all()
+    existing_params = [ (param.employee_id, param.kpi_alias, param.month) for param in existing_params ]
+    print(existing_params)
+
+    # Parameters have to be updated for every KPI and every manager Employee
+    employee_ids = db.session.scalars(db.select(db_classes.Employee.id).where(db_classes.Employee.role.in_(["BU Manager", "Senior Manager"]))).all()
+    kpi_aliases = db.session.scalars(db.select(db_classes.KPICategory.alias)).all()
+
+    for eid in employee_ids:
+        for kpi in kpi_aliases:
+            for mth in current_month + relativedelta(months=1) , current_month + relativedelta(months=4):
+                if (eid, kpi, mth) in existing_params:
+                    print(f"Parameter already exists, skipping: {eid} - {kpi} - {mth.strftime('%m-%Y')}")
+                    continue
+                val = latest_params.get((eid, kpi), 0) # default to 0 if no previous value
+                print(f"Inserting parameter: {eid} - {kpi} - {mth.strftime('%m-%Y')} - {val}")
+                param = db_classes.Parameter(
+                    employee_id = eid,
+                    kpi_alias = kpi,
+                    month = mth,
+                    value = latest_params.get((eid, kpi), 0) # set to latest value or 0 if non-existent
+                )
+                db.session.add(param)
+
+                out_param = param.json()
+                out_param.update({"change_status":"created"})
+                output_data.append(out_param)
+
+    return output_data
 
 def insertBusinessUnits(series):
     output_bus = []
     for val in series:
+        val = val.strip().upper()
         change_status = "unchanged"
-
+        
         # Retrieve business unit
         print(f"Checking database if BU exists: {val}")
         bu = db.session.scalars(
@@ -712,27 +775,29 @@ def insertBusinessUnits(series):
     return output_bus
 
 def insertPNLCatPerRow(series, parent_code = None):
+    code = series["Code"].strip()
+    name = series["Name"].strip().upper()
     change_status = "unchanged"
-    
-    print(f"Checking database if PNL Category exists: {series["Code"]}")
+
+    print(f"Checking database if PNL Category exists: {code}")
     pnl_cat = db.session.scalars(
         db.select(db_classes.PNLCategory)
-        .filter_by(code=series["Code"])
+        .filter_by(code=code)
     ).first()
 
     if pnl_cat:
         print(f"\tExisting PNL Category found: {pnl_cat.code} - {pnl_cat.name}")
-        if pnl_cat.name == series["Name"]:
+        if pnl_cat.name == name:
             print(f"\t\tName matches, no action required.")
         else:
-            print(f"\t\tName mismatch, updating name: -> {series["Name"]}")
-            pnl_cat.name = series["Name"]
+            print(f"\t\tName mismatch, updating name: -> {name}")
+            pnl_cat.name = name
             change_status = "updated"
     else:
-        print(f"\tNo existing PNL Category found, proceeding to create: {series["Code"]} - {series["Name"]}")
+        print(f"\tNo existing PNL Category found, proceeding to create: {code} - {name}")
         pnl_cat = db_classes.PNLCategory(
-            code=series["Code"],
-            name=series["Name"],
+            code=code,
+            name=name,
             description = None,
             parent_code = parent_code
         )
@@ -744,16 +809,24 @@ def insertPNLCatPerRow(series, parent_code = None):
     return output_cat
 
 def insertPNLEntriesPerRow(series, month_str):
+    code = series["Code"].strip()
     month = datetime.strptime(month_str, "%m-%Y").date()
     output_entries = []
 
-    for bu, val in series.index[2:].items(): # skip Code and Name
+    for bu, val in series.iloc[2:].items(): # skip Code and Name
+        bu = bu.strip().upper()
+        if pd.isna(val): # skip if value is pd.NA (does not trigger ValueError because NaN is a special float value) or None
+            continue
+        try:
+            val = float(str(val).strip())
+        except ValueError:
+            continue  # skip if value cannot be converted to float (non-numeric)
         change_status = "unchanged"
 
-        print(f"Checking database if PNL Entry exists: {series["Code"]} - {bu} - {month}")
+        print(f"Checking database if PNL Entry exists: {code} - {bu} - {month}")
         pnl_entry = db.session.scalars(
             db.select(db_classes.PNLEntry)
-            .filter_by(pnl_code=series["Code"], business_unit=bu, month=month)
+            .filter_by(pnl_code=code, business_unit=bu, month=month)
         ).first()
 
         if pnl_entry:
@@ -765,9 +838,9 @@ def insertPNLEntriesPerRow(series, month_str):
                 pnl_entry.value = val
                 change_status = "updated"
         else:
-            print(f"\tNo existing PNL Entry found, proceeding to create: {series["Code"]} - {bu} - {month} - {val}")
+            print(f"\tNo existing PNL Entry found, proceeding to create: {code} - {bu} - {month} - {val}")
             pnl_entry = db_classes.PNLEntry(
-                pnl_code=series["Code"],
+                pnl_code=code,
                 business_unit=bu,
                 month=month,
                 value=val
@@ -781,13 +854,189 @@ def insertPNLEntriesPerRow(series, month_str):
 
     return output_entries
 
-def insertKPIEntriesPerBU(df, month_str): #TODO
-    pass
+def insertKPIEntriesPerBU(df, bu, month_str): #TODO
+    output_data = []
+    month = datetime.strptime(month_str, "%m-%Y").date()
+    entry_dict = df.set_index("Code")[bu].to_dict() # convert to Code-Value dict for PNL entries
 
-def insertNotificationsPerBU(bu_alias, kpi_dict, month_str): #TODO
-    pass
+    kpi_dict = { # calculate KPIs and consolidate
+        **calculateProfitKPIs(entry_dict),
+        **calculateSalesKPIs(entry_dict),
+        **calculateCostKPIs(entry_dict)
+    }
 
-def triggerMachineLearning(): #TODO send message to ML service
+    for kpi_alias, kpi_value in kpi_dict.items():
+        change_status = "unchanged"
+
+        print(f"Checking database if KPI Entry exists: {kpi_alias} - {bu} - {month_str}")
+        kpi_entry = db.session.scalars(
+            db.select(db_classes.KPIEntry)
+            .filter_by(kpi_alias=kpi_alias, business_unit=bu, month=month)
+        ).first()
+
+        if kpi_entry:
+            print(f"\tExisting KPI Entry found: {kpi_entry.kpi_alias} - {kpi_entry.business_unit} - {kpi_entry.month}")
+            if kpi_entry.value == kpi_value:
+                print(f"\t\tValue matches, no action required.")
+            else:
+                print(f"\t\tValue mismatch, updating value: -> {kpi_value}")
+                kpi_entry.value = kpi_value
+                change_status = "updated"
+        else:
+            print(f"\tNo existing KPI Entry found, proceeding to create: {kpi_alias} - {bu} - {month_str} - {kpi_value}")
+            kpi_entry = db_classes.KPIEntry(
+                kpi_alias=kpi_alias,
+                business_unit=bu,
+                month=month,
+                value=kpi_value
+            )
+            db.session.add(kpi_entry)
+            change_status = "created"
+
+        output_entry = kpi_entry.json()
+        output_entry.update({"change_status": change_status})
+        output_data.append(output_entry)
+
+    return output_data
+
+def calculateProfitKPIs(entries):
+    output_data = {
+        "PROF": None, #TODO: Very arbitrary, currently just takes all the income minus all the costs
+        "GPM": None,
+        "OPM": None,
+        "NPM": None,
+        "QR": None
+    }
+    
+    # summing data
+    sales_revenue = 0
+    sales_adjustments = 0
+    other_incomes = 0
+    cogs = 0
+    op_expenses = 0
+    fin_expenses = 0
+    for code, val in entries.items():
+        if pd.isna(val): # skip if value is pd.NA (does not trigger ValueError because NaN is a special float value) or None
+            continue
+        try:
+            val = float(str(val).strip())
+        except ValueError:
+            continue  # skip if value cannot be converted to float (non-numeric)
+
+        if code.startswith("5000-") and code not in ["5000-A015", "5000-M004"]:
+            sales_revenue += val
+        if code.startswith("5500"):
+            sales_adjustments += val
+        if code.startswith("8") or code in ["5000-A015", "5000-M004"]:
+            other_incomes += val
+        if code.startswith("6"):
+            cogs += val
+        if code.startswith("901") or code.startswith("902"):
+            op_expenses += val
+        if code.startswith("900"):
+            fin_expenses += val
+
+    # intermediate calculations
+    net_sales = sales_revenue - sales_adjustments
+    all_expenses = op_expenses + fin_expenses
+    all_incomes = sales_revenue + other_incomes - sales_adjustments
+
+    # KPI calculations
+    output_data["PROF"] = round(all_incomes - cogs - all_expenses, 2)
+    output_data["GPM"] = round((sales_revenue - cogs) / sales_revenue * 100, 4) if sales_revenue != 0 else None
+    output_data["OPM"] = round((net_sales - cogs - op_expenses) / net_sales * 100, 4) if net_sales != 0 else None
+    output_data["NPM"] = round((all_incomes - cogs - all_expenses) / all_incomes * 100, 4) if all_incomes != 0 else None
+    output_data["QR"] = None
+
+    return output_data
+
+def calculateSalesKPIs(entries):
+    output_data = {
+        "SALES": None, #TODO: Very arbitrary, currently just sums all income except "Other Incomes"
+        "ROS": None,
+        "DSO": None,
+        "RT": None
+    }
+
+    # summing data
+    sales_revenue = 0
+    sales_adjustments = 0
+    cogs = 0
+    op_expenses = 0
+    for code, val in entries.items():
+        if pd.isna(val): # skip if value is pd.NA (does not trigger ValueError because NaN is a special float value) or None
+            continue
+        try:
+            val = float(str(val).strip())
+        except ValueError:
+            continue  # skip if value cannot be converted to float (non-numeric)
+
+        if code.startswith("5000-") and code not in ["5000-A015", "5000-M004"]:
+            sales_revenue += val
+        if code.startswith("5500"):
+            sales_adjustments += val
+        if code.startswith("6"):
+            cogs += val
+        if code.startswith("901") or code.startswith("902"):
+            op_expenses += val
+
+    # intermediate calculations
+    net_sales = sales_revenue - sales_adjustments
+    operating_profit = sales_revenue - sales_adjustments - cogs - op_expenses
+
+    # KPI calculations
+    output_data["SALES"] = round(net_sales, 2)
+    output_data["ROS"] = round(operating_profit / net_sales * 100, 4) if net_sales != 0 else None
+    output_data["DSO"] = None
+    output_data["RT"] = None
+
+    return output_data
+
+def calculateCostKPIs(entries):
+    output_data = {
+        "COST": None, #TODO: Very arbitrary, currently just sums all cogs and expenses
+        "COGSR": None,
+        "DPO": None,
+        "OHR": None
+    }
+
+    # summing data
+    sales_revenue = 0
+    sales_adjustments = 0
+    cogs = 0
+    all_expenses = 0
+    overhead_costs = 0
+    for code, val in entries.items():
+        if pd.isna(val): # skip if value is pd.NA (does not trigger ValueError because NaN is a special float value) or None
+            continue
+        try:
+            val = float(str(val).strip())
+        except ValueError:
+            continue  # skip if value cannot be converted to float (non-numeric)
+
+        if code.startswith("5000-") and code not in ["5000-A015", "5000-M004"]:
+            sales_revenue += val
+        if code.startswith("5500"):
+            sales_adjustments += val
+        if code.startswith("6"):
+            cogs += val
+        if code.startswith("9"):
+            all_expenses += val
+        if code.startswith("902") or code.startswith("9000-D"):
+            overhead_costs += val
+
+    # intermediate calculations
+    net_sales = sales_revenue - sales_adjustments
+
+    # KPI calculations
+    output_data["COST"] = round(cogs + all_expenses, 2)
+    output_data["COGSR"] = round(cogs / net_sales * 100, 4) if net_sales != 0 else None
+    output_data["DPO"] = None
+    output_data["OHR"] = round(overhead_costs / net_sales * 100, 4) if net_sales != 0 else None
+
+    return output_data
+
+def triggerForecastService(): #TODO send message to ML service
     pass
 
 ######################## Helper Functions ########################
@@ -800,7 +1049,7 @@ def getLatestPNLEntryDate(bu_alias):
     latest_date = datetime.strptime(latest_entry.json()['month'], "%m-%Y").date() if latest_entry else datetime.now().date()
     return latest_date
 
-# KPI Calculation
+# No Longer Used
 def getLast12MonthsPNLEntries(bu_alias):
     latest_date = getLatestPNLEntryDate(bu_alias)
     print(f"Fetching based on latest month: {latest_date.strftime('%m-%Y')}")
@@ -845,91 +1094,6 @@ def getNext3MonthsPNLForecasts(bu_alias):
         lookup_dict['entries'][entry['month']][entry['pnl_code']] = entry['value']
 
     return lookup_dict
-
-def calculateProfitKPIs(entries):
-    output_data = {
-        "Profit": None, #TODO: Very arbitrary, currently just takes all the income minus all the costs
-        "Gross Profit Margin": None,
-        "Operating Profit Margin": None,
-        "Net Profit Margin": None,
-        "Quick Ratio": None
-    }
-    
-    # summing data
-    sales_revenue = sum(value for code, value in entries.items() if code.startswith("5000-") and code not in ["5000-A015", "5000-M004"])
-    sales_adjustments = sum(value for code, value in entries.items() if code == '5500')
-    other_incomes =  sum(value for code, value in entries.items() if code.startswith("8") or code in ["5000-A015", "5000-M004"])
-    cogs = sum(value for code, value in entries.items() if code.startswith('6'))
-    op_expenses = sum(value for code, value in entries.items() if code.startswith('901') or code.startswith('902'))
-    fin_expenses = sum(value for code, value in entries.items() if code.startswith('900'))
-    print(sales_revenue, sales_adjustments, other_incomes, cogs, op_expenses, fin_expenses)
-
-    # intermediate calculations
-    net_sales = sales_revenue - sales_adjustments
-    all_expenses = op_expenses + fin_expenses
-    all_incomes = sales_revenue + other_incomes - sales_adjustments
-
-    # KPI calculations
-    output_data["Profit"] = all_incomes - cogs - all_expenses
-    output_data["Gross Profit Margin"] = round((sales_revenue - cogs) / sales_revenue * 100, 4) if sales_revenue != 0 else None
-    output_data["Operating Profit Margin"] = round((net_sales - cogs - op_expenses) / net_sales * 100, 4) if net_sales != 0 else None
-    output_data["Net Profit Margin"] = round((all_incomes - cogs - all_expenses) / all_incomes * 100, 4) if all_incomes != 0 else None
-    output_data["Quick Ratio"] = None
-
-    return output_data
-
-def calculateSalesKPIs(entries):
-    output_data = {
-        "Sales": None, #TODO: Very arbitrary, currently just sums all income except "Other Incomes"
-        "Return on Sales": None,
-        "Days Sales Outstanding (DSO)": None,
-        "Receivables Turnover": None
-    }
-
-    # summing data
-    sales_revenue = sum(value for code, value in entries.items() if code.startswith("5000-") and code not in ["5000-A015", "5000-M004"])
-    sales_adjustments = sum(value for code, value in entries.items() if code == '5500')
-    cogs = sum(value for code, value in entries.items() if code.startswith('6'))
-    op_expenses = sum(value for code, value in entries.items() if code.startswith('901') or code.startswith('902'))
-    print(sales_revenue, sales_adjustments, cogs, op_expenses)
-
-    # intermediate calculations
-    net_sales = sales_revenue - sales_adjustments
-    operating_profit = sales_revenue - sales_adjustments - cogs - op_expenses
-
-    # KPI calculations
-    output_data["Sales"] = net_sales
-    output_data["Return on Sales"] = round(operating_profit / net_sales * 100, 4) if net_sales != 0 else None
-    output_data["Days Sales Outstanding (DSO)"] = None
-    output_data["Receivables Turnover"] = None
-
-    return output_data
-
-def calculateCostKPIs(entries):
-    output_data = {
-        "Cost": None, #TODO: Very arbitrary, currently just sums all cogs and expenses
-        "COGS Ratio": None,
-        "Days Payable Outstanding (DPO)": None,
-        "Overhead Ratio": None
-    }
-
-    # summing data
-    sales_revenue = sum(value for code, value in entries.items() if code.startswith("5000-") and code not in ["5000-A015", "5000-M004"])
-    sales_adjustments = sum(value for code, value in entries.items() if code == '5500')
-    cogs = sum(value for code, value in entries.items() if code.startswith('6'))
-    all_expenses = sum(value for code, value in entries.items() if code.startswith('9'))
-    overhead_costs = sum(value for code, value in entries.items() if code.startswith('902') or code.startswith('9000-D'))
-    
-    # intermediate calculations
-    net_sales = sales_revenue - sales_adjustments
-
-    # KPI calculations
-    output_data["Cost"] = cogs + all_expenses
-    output_data["COGS Ratio"] = round(cogs / net_sales * 100, 4) if net_sales != 0 else None
-    output_data["Days Payable Outstanding (DPO)"] = None
-    output_data["Overhead Ratio"] = round(overhead_costs / net_sales * 100, 4) if net_sales != 0 else None
-
-    return output_data
 
 if __name__ == '__main__':
     print("Monolithic flask application running:" + os.path.basename(__file__) + "...")

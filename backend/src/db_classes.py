@@ -7,8 +7,8 @@ class BusinessUnit(db.Model):
 
     def json(self):
         return {
-            'alias': self.bu_alias,
-            'bu_name': self.bu_name
+            'alias': self.alias,
+            'bu_name': self.name
         }
 
 class Employee(db.Model):
@@ -16,6 +16,7 @@ class Employee(db.Model):
     id = db.Column(db.String(20), primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(255), nullable=False)
+    phone_number = db.Column(db.String(20), nullable=False)
     role = db.Column(db.String(50), nullable=False)
     business_unit = db.Column(db.String(10), db.ForeignKey('business_unit.alias'), nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
@@ -26,6 +27,7 @@ class Employee(db.Model):
             'id': self.id,
             'name': self.name,
             'email': self.email,
+            'phone_number': self.phone_number,
             'role': self.role,
             'business_unit': self.business_unit,
             'created_at': self.created_at.strftime('%d-%m-%Y %H:%M:%S')
@@ -77,14 +79,14 @@ class PNLEntry(db.Model):
     pnl_code = db.Column(db.String(15), db.ForeignKey('pnl_category.code'), primary_key=True)
     business_unit = db.Column(db.String(10), db.ForeignKey('business_unit.alias'), primary_key=True)
     month = db.Column(db.Date, primary_key=True)
-    value = db.Column(db.Numeric(15, 2), nullable=False)
+    value = db.Column(db.Numeric(15, 2), nullable=True)
 
     def json(self):
         return {
             'pnl_code': self.pnl_code,
             'business_unit': self.business_unit,
             'month': self.month.strftime('%m-%Y'),
-            'value': float(self.value)
+            'value': float(self.value) if self.value is not None else None
         }
     
 class PNLForecast(db.Model):
@@ -92,14 +94,14 @@ class PNLForecast(db.Model):
     pnl_code = db.Column(db.String(15), db.ForeignKey('pnl_category.code'), primary_key=True)
     business_unit = db.Column(db.String(10), db.ForeignKey('business_unit.alias'), primary_key=True)
     month = db.Column(db.Date, primary_key=True)
-    value = db.Column(db.Numeric(15, 2), nullable=False)
+    value = db.Column(db.Numeric(15, 2), nullable=True)
 
     def json(self):
         return {
             'pnl_code': self.pnl_code,
             'business_unit': self.business_unit,
             'month': self.month.strftime('%m-%Y'),
-            'value': float(self.value)
+            'value': float(self.value) if self.value is not None else None
         }
     
 class Parameter(db.Model):
@@ -107,7 +109,7 @@ class Parameter(db.Model):
     employee_id = db.Column(db.String(20), db.ForeignKey('employee.id'), primary_key=True)
     kpi_alias = db.Column(db.String(10), db.ForeignKey('kpi_category.alias'), primary_key=True)
     month = db.Column(db.Date, primary_key=True)
-    value = db.Column(db.Numeric(15, 4), nullable=False)
+    value = db.Column(db.Numeric(15, 4), nullable=True)
     is_notified = db.Column(db.Boolean, default=False)
 
     def json(self):
@@ -115,7 +117,7 @@ class Parameter(db.Model):
             'employee_id': self.employee_id,
             'kpi_alias': self.kpi_alias,
             'month': self.month.strftime('%m-%Y'),
-            'value': float(self.value),
+            'value': float(self.value) if self.value is not None else None,
             'is_notified': self.is_notified
         }
     
@@ -139,14 +141,14 @@ class KPIEntry(db.Model):
     kpi_alias = db.Column(db.String(10), db.ForeignKey('kpi_category.alias'), primary_key=True)
     business_unit = db.Column(db.String(10), db.ForeignKey('business_unit.alias'), primary_key=True)
     month = db.Column(db.Date, primary_key=True)
-    value = db.Column(db.Numeric(15, 4), nullable=False)
+    value = db.Column(db.Numeric(15, 4), nullable=True)
 
     def json(self):
         return {
             'kpi_alias': self.kpi_alias,
             'business_unit': self.business_unit,
             'month': self.month.strftime('%m-%Y'),
-            'value': float(self.value)
+            'value': float(self.value) if self.value is not None else None
         }
     
 class KPIForecast(db.Model):
@@ -154,12 +156,12 @@ class KPIForecast(db.Model):
     kpi_alias = db.Column(db.String(10), db.ForeignKey('kpi_category.alias'), primary_key=True)
     business_unit = db.Column(db.String(10), db.ForeignKey('business_unit.alias'), primary_key=True)
     month = db.Column(db.Date, primary_key=True)
-    value = db.Column(db.Numeric(15, 4), nullable=False)
+    value = db.Column(db.Numeric(15, 4), nullable=True)
 
     def json(self):
         return {
             'kpi_alias': self.kpi_alias,
             'business_unit': self.business_unit,
             'month': self.month.strftime('%m-%Y'),
-            'value': float(self.value)
+            'value': float(self.value) if self.value is not None else None
         }

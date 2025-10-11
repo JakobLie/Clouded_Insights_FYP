@@ -7,12 +7,12 @@ INSERT INTO business_unit (alias, name) VALUES
     ('MCE', 'Mechanical Engineering');
 
 -- Insert employees
-INSERT INTO employee (id, name, email, role, business_unit, password_hash) VALUES
-    ('abcd-abcd-abcd', 'Jakob Lie', 'jakob@tsh.com.sg', 'BU Manager', 'BB1', 'hashed_password_1'),
-    ('abcd-abcd-abce', 'Jeremy Lin Kairui son of Lin Chee', 'jeremy@tsh.com.sg', 'BU Manager', 'MCE', 'hashed_password_1'),
-    ('abcd-abcd-abcf', 'Sarah Thauheed', 'sarah@tsh.com.sg', 'BU Manager', 'HQ', 'hashed_password_1'),
-    ('abcd-abcd-abcg', 'Benedict Ting', 'bennett@tsh.com.sg', 'Senior Manager', NULL, 'hashed_password_1'),
-    ('abcd-abcd-abch', 'Zachary Tay', 'zachary@tsh.com.sg', 'Accountant', NULL, 'hashed_password_1');
+INSERT INTO employee (id, name, email, phone_number, role, business_unit, password_hash) VALUES
+    ('abcd-abcd-abcd', 'Jakob Lie', 'jakob@tsh.com.sg', '+6588888888', 'BU Manager', 'BB1', 'hashed_password_1'),
+    ('abcd-abcd-abce', 'Jeremy Lin Kairui son of Lin Chee', '+6588888889', 'jeremy@tsh.com.sg', 'BU Manager', 'MCE', 'hashed_password_1'),
+    ('abcd-abcd-abcf', 'Sarah Thauheed', 'sarah@tsh.com.sg', '+6588888890', 'BU Manager', 'HQ', 'hashed_password_1'),
+    ('abcd-abcd-abcg', 'Benedict Ting', 'bennett@tsh.com.sg', '+6588888891', 'Senior Manager', 'TOTAL', 'hashed_password_1'),
+    ('abcd-abcd-abch', 'Zachary Tay', 'zachary@tsh.com.sg', '+6588888892', 'Accountant', NULL, 'hashed_password_1');
 
 -- Insert notifications
 INSERT INTO notification (employee_id, type, subject, body, is_read,created_at) VALUES 
@@ -100,23 +100,6 @@ INSERT INTO pnl_forecast (pnl_code, business_unit, month, value) VALUES
     ('5000-A001', 'BB1', '2026-01-01', 55000),
     ('5000-A001', 'BB1', '2026-02-01', 55000);
 
--- Insert parameters
-INSERT INTO parameter (employee_id, kpi_alias, created_date, value, is_notified) VALUES
-    ('abcd-abcd-abcd', 'SALES', '2025-07-01', 40000, FALSE),
-    ('abcd-abcd-abcd', 'COST', '2025-07-01', 20000, FALSE),
-    ('abcd-abcd-abcd', 'SALES', '2025-09-15', 101, FALSE),
-    ('abcd-abcd-abcd', 'COST', '2025-09-15', 102, FALSE),
-    ('abcd-abcd-abcd', 'GPM', '2025-09-15', 0.11, FALSE),
-    ('abcd-abcd-abcd', 'OPM', '2025-09-15', 0.12, FALSE),
-    ('abcd-abcd-abcd', 'NPM', '2025-09-15', 0.13, FALSE),
-    ('abcd-abcd-abcd', 'QR', '2025-09-15', 0.14, FALSE),
-    ('abcd-abcd-abcd', 'ROS', '2025-09-15', 0.21, FALSE),
-    ('abcd-abcd-abcd', 'DSO', '2025-09-15', 0.22, FALSE),
-    ('abcd-abcd-abcd', 'RT', '2025-09-15', 0.23, FALSE),
-    ('abcd-abcd-abcd', 'COGSR', '2025-09-15', 0.31, FALSE),
-    ('abcd-abcd-abcd', 'DPO', '2025-09-15', 0.32, FALSE),
-    ('abcd-abcd-abcd', 'OHR', '2025-09-15', 0.33, FALSE);
-
 -- Insert KPI categories
 INSERT INTO kpi_category (alias, name, category, description) VALUES
     ('PROF', 'Profit', 'PROFIT', 'Gross profit, summing sales income and subtracting cost of goods sold.'),
@@ -133,27 +116,44 @@ INSERT INTO kpi_category (alias, name, category, description) VALUES
     ('DPO', 'Days Payable Outstanding', 'COST','Currently incalculable'),
     ('OHR', 'Overhead Ratio', 'COST','Measures overhead (indirect costs) as a percentage of sales.');
 
+-- Insert parameters
+INSERT INTO parameter (employee_id, kpi_alias, month, value, is_notified) VALUES
+    ('abcd-abcd-abcd', 'SALES', '2025-07-01', 40000, FALSE),
+    ('abcd-abcd-abcd', 'COST', '2025-07-01', 20000, FALSE),
+    ('abcd-abcd-abcd', 'SALES', '2025-09-15', 101, FALSE),
+    ('abcd-abcd-abcd', 'COST', '2025-09-15', 102, FALSE),
+    ('abcd-abcd-abcd', 'GPM', '2025-09-15', 0.11, FALSE),
+    ('abcd-abcd-abcd', 'OPM', '2025-09-15', 0.12, FALSE),
+    ('abcd-abcd-abcd', 'NPM', '2025-09-15', 0.13, FALSE),
+    ('abcd-abcd-abcd', 'QR', '2025-09-15', 0.14, FALSE),
+    ('abcd-abcd-abcd', 'ROS', '2025-09-15', 0.21, FALSE),
+    ('abcd-abcd-abcd', 'DSO', '2025-09-15', 0.22, FALSE),
+    ('abcd-abcd-abcd', 'RT', '2025-09-15', 0.23, FALSE),
+    ('abcd-abcd-abcd', 'COGSR', '2025-09-15', 0.31, FALSE),
+    ('abcd-abcd-abcd', 'DPO', '2025-09-15', 0.32, FALSE),
+    ('abcd-abcd-abcd', 'OHR', '2025-09-15', 0.33, FALSE);
+
 -- Insert KPIs
 INSERT INTO kpi_entry (kpi_alias, business_unit, month, value) VALUES
     ('GPM', 'BB1', '2025-08-01', 90.0),
     ('OPM', 'BB1', '2025-08-01', 90.0),
     ('NPM', 'BB1', '2025-08-01', 90.0),
-    ('QR', 'BB1', '2025-08-01', None),
+    ('QR', 'BB1', '2025-08-01', NULL),
     ('ROS', 'BB1', '2025-08-01', 90.0),
-    ('DSO', 'BB1', '2025-08-01', None),
-    ('RT', 'BB1', '2025-08-01', None),
+    ('DSO', 'BB1', '2025-08-01', NULL),
+    ('RT', 'BB1', '2025-08-01', NULL),
     ('COGSR', 'BB1', '2025-08-01', 10.0),
-    ('DPO', 'BB1', '2025-08-01', None),
+    ('DPO', 'BB1', '2025-08-01', NULL),
     ('OHR', 'BB1', '2025-08-01', 10.0),
     ('GPM', 'BB1', '2025-09-01', 90.5),
     ('OPM', 'BB1', '2025-09-01', 91.2),
     ('NPM', 'BB1', '2025-09-01', 90.3222),
-    ('QR', 'BB1', '2025-09-01', None),
+    ('QR', 'BB1', '2025-09-01', NULL),
     ('ROS', 'BB1', '2025-09-01', 89.1111),
-    ('DSO', 'BB1', '2025-09-01', None),
-    ('RT', 'BB1', '2025-09-01', None),
+    ('DSO', 'BB1', '2025-09-01', NULL),
+    ('RT', 'BB1', '2025-09-01', NULL),
     ('COGSR', 'BB1', '2025-09-01', 11.2222),
-    ('DPO', 'BB1', '2025-09-01', None),
+    ('DPO', 'BB1', '2025-09-01', NULL),
     ('OHR', 'BB1', '2025-09-01', 9.0);
 
 -- Insert KPI Forecasts
@@ -161,20 +161,20 @@ INSERT INTO kpi_entry (kpi_alias, business_unit, month, value) VALUES
     ('GPM', 'BB1', '2025-10-01', 90.0),
     ('OPM', 'BB1', '2025-10-01', 90.0),
     ('NPM', 'BB1', '2025-10-01', 90.0),
-    ('QR', 'BB1', '2025-10-01', None),
+    ('QR', 'BB1', '2025-10-01', NULL),
     ('ROS', 'BB1', '2025-10-01', 90.0),
-    ('DSO', 'BB1', '2025-10-01', None),
-    ('RT', 'BB1', '2025-10-01', None),
+    ('DSO', 'BB1', '2025-10-01', NULL),
+    ('RT', 'BB1', '2025-10-01', NULL),
     ('COGSR', 'BB1', '2025-10-01', 10.0),
-    ('DPO', 'BB1', '2025-10-01', None),
+    ('DPO', 'BB1', '2025-10-01', NULL),
     ('OHR', 'BB1', '2025-10-01', 10.0),
     ('GPM', 'BB1', '2025-11-01', 89.2045),
     ('OPM', 'BB1', '2025-11-01', 89.2045),
     ('NPM', 'BB1', '2025-11-01', 89.2045),
-    ('QR', 'BB1', '2025-11-01', None),
+    ('QR', 'BB1', '2025-11-01', NULL),
     ('ROS', 'BB1', '2025-11-01', 89.2045),
-    ('DSO', 'BB1', '2025-11-01', None),
-    ('RT', 'BB1', '2025-11-01', None),
+    ('DSO', 'BB1', '2025-11-01', NULL),
+    ('RT', 'BB1', '2025-11-01', NULL),
     ('COGSR', 'BB1', '2025-11-01', 10.7955),
-    ('DPO', 'BB1', '2025-11-01', None),
+    ('DPO', 'BB1', '2025-11-01', NULL),
     ('OHR', 'BB1', '2025-11-01', 10.75);
