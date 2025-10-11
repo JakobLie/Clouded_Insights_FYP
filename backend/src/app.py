@@ -686,7 +686,6 @@ def findSumColumn(series):
             return i
     return None
 
-@app.route("/test_insertparams/<month_str>/", methods=['POST']) # test purposes only TODO: remove
 def insertNext3MonthsDefaultParameters(month_str):
     output_data = []
     current_month = datetime.strptime(month_str, "%m-%Y").date()
