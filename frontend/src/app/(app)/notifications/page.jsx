@@ -1,4 +1,9 @@
 import NotificationItem from "@/app/(app)/notifications/NotificationItem";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/components/AuthProvider";
+import { useRouter } from "next/navigation";
+
+
 
 const SAMPLE = [
   {
@@ -31,6 +36,43 @@ const SAMPLE = [
 ];
 
 export default function Notifications() {
+
+  // Get User Object
+  const { user, logout } = useAuth();
+  const router = useRouter();
+
+  // Set React Hooks
+  const [notifications, setNotifications] = useState({})
+
+  // UX state
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Redirect if not logged in
+  useEffect(() => {
+    if (!user) {
+      router.replace("/login");
+    };
+  }, [user, router]);
+
+  // // Fetch all data once we have a user
+  // useEffect(() => {
+  //   if (!user) return;
+
+  //   const ac = new AbortController();
+
+  //   async function loadNotificationData() {
+  //     setLoading(true);
+  //     setError(null);
+  //   }
+
+  //   try {
+  //     const notifications = await fetch(`http://localhost:5000/`)
+  //   } catch (error) {
+      
+  //   }
+  // })
+
   return (
     <main className="mx-auto max-w-4xl p-4 sm:p-6">
       <h1 className="sr-only">Notifications</h1>

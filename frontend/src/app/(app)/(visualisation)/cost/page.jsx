@@ -97,23 +97,50 @@ export default function Cost() {
         // Create cost cards
         const costKPINames = Object.keys(latestEntryKPI);
         const cards = costKPINames.map((name) => {
-          const isGrowth = latestEntryKPI[name] <= upcomingForecastKPI[name];
-          const percentageDelta = ((upcomingForecastKPI[name] - latestEntryKPI[name]) / latestEntryKPI[name]) * 100;
-          const KPIValue = upcomingForecastKPI[name] < 1 ? upcomingForecastKPI[name] * 100 : upcomingForecastKPI[name];
-          const targetValue = processedTargets[name] < 1 ? processedTargets[name] * 100 : processedTargets[name];
+          const latestValue = latestEntryKPI[name];
+          const forecastValue = upcomingForecastKPI[name];
+
+          // Get the correct target value for this KPI
+          const targetRawValue = name === "Cost" ? costTarget : processedTargets[name];
+
+          // Skip if any critical value is missing
+          if (latestValue === undefined || forecastValue === undefined || targetRawValue === undefined) {
+            console.warn(`Missing data for KPI: ${name}`);
+            return null;
+          }
+
+          // Check if values are percentages
+          const isPercentage = Math.abs(forecastValue) < 1;
+          const KPIValue = isPercentage ? forecastValue * 100 : forecastValue;
+          const targetValue = isPercentage ? targetRawValue * 100 : targetRawValue;
+
+          // Calculate difference from target
+          const forecastedDifferenceFromTarget = forecastValue - targetRawValue;
+          const percentageDelta = (forecastedDifferenceFromTarget / targetRawValue) * 100;
 
           return {
             title: name,
             lines: [
-              { label: "Forecasted", value: `${name === "Cost" ? "SGD" : ""}${formatCurrency(KPIValue)}${name !== "Cost" ? "%" : ""}` },
-              { label: "Target", value: `${name === "Cost" ? "SGD" : ""}${formatCurrency(name === "Cost" ? costTarget : targetValue)}${name !== "Cost" ? "%" : ""}` },
-              { label: `Monthly ${isGrowth ? "Growth" : "Decline"}`, value: `${percentageDelta.toFixed(2)}%` }
+              { label: "Forecasted", value: `${formatCurrency(KPIValue)}${name === "Cost" ? "SGD" : "%"}` },
+              { label: "Target", value: `${formatCurrency(name === "Cost" ? costTarget : targetValue)}${name === "Cost" ? "SGD" : "%"}` },
+              { label: `Percentage ${forecastedDifferenceFromTarget >= 0 ? "Surplus" : "Deficit"}`, value: `${Math.abs(percentageDelta).toFixed(2)}%` }
             ],
-            accent: percentageDelta >= 0 ? "green" : (percentageDelta <= -5 ? "red" : "yellow")
+            accent: percentageDelta <= 0 ? "green" : (percentageDelta >= -5 ? "red" : "yellow")
           };
         });
 
-        setCostCards(cards);
+        // Sort cards: Profit/Cost first, then red, yellow, green
+        const sortedCards = cards.sort((a, b) => {
+          // Profit/Cost/Sales always comes first
+          if (a.title === "Cost") return -1;
+          if (b.title === "Cost") return 1;
+
+          // Then sort by accent: red, yellow, green
+          const accentOrder = { red: 0, yellow: 1, green: 2, gray: 3 };
+          return accentOrder[a.accent] - accentOrder[b.accent];
+        });
+
+        setCostCards(sortedCards);
 
       } catch (error) {
         if (error.name === 'AbortError') {

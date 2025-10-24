@@ -62,7 +62,7 @@ export default function Login() {
       setTimeout(() => {
         setPopupOpen(false);
         router.push("/setup");
-      }, 500);
+      }, 1000);
 
     } catch (error) {
       setError(error.message || "Login failed");

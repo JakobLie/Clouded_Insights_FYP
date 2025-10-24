@@ -3,16 +3,24 @@
 import Link from "next/link";
 import Image from "next/image";
 
-export default function Navbar() {
+export default function Navbar({userDetails}) {
+
+  // const employee = {
+  //   id: "12345",
+  //   name: "Lie Wie Yong Jakob",
+  //   email: "jakob.lie.2022@scis.smu.edu.sg",
+  //   role: "BU Manager",
+  //   business_unit: "BB1",
+  //   password_hash: "hashedString",
+  //   created_at: "17-09-2025"
+  // }
 
   const employee = {
-    id: "12345",
-    name: "Lie Wie Yong Jakob",
-    email: "jakob.lie.2022@scis.smu.edu.sg",
-    role: "BU Manager",
-    business_unit: "BB1",
-    password_hash: "hashedString",
-    created_at: "17-09-2025"
+    id: userDetails.id,
+    name: userDetails.name,
+    email: userDetails.email,
+    role: userDetails.role,
+    business_unit: userDetails.business_unit,
   }
 
   return (

@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import KPITable from "./KPITable";
+import FileUploadModal from "./FileUploadModal";
 import { getCurrentDateFormatted } from "@/utils/time-utils";
 
 export default function Setup() {
@@ -17,6 +18,8 @@ export default function Setup() {
   const [employeeDetails, setEmployeeDetails] = useState({});
   const [pastTargets, setPastTargets] = useState([]);
   const [newTargets, setNewTargets] = useState(null);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false); // Add modal state
+
 
   // UX state
   const [loading, setLoading] = useState(true);
@@ -129,7 +132,31 @@ export default function Setup() {
     );
   }
 
-  // Update DB with new Targets 
+  // Handle file upload
+  const handleFileUpload = async (file) => {
+    // const formData = new FormData();
+    // formData.append('file', file);
+    // formData.append('employee_id', user.id);
+
+    // const response = await fetch('http://localhost:5000/parameter/upload', {
+    //   method: 'POST',
+    //   body: formData,
+    // });
+
+    // if (!response.ok) {
+    //   throw new Error(`HTTP Error! Status: ${response.status}`);
+    // }
+
+    // const result = await response.json();
+    // console.log('Upload success:', result);
+
+    // // Refresh the parameters list
+    // // You might want to refetch the data here or add the new data to pastTargets
+    // window.location.reload(); // Simple approach, or call your loadParameters function
+  };
+
+
+  // Handle Update button (Update DB with new Targets) 
   const handleUpdate = async () => {
     if (!newTargets) return;
     setSaving(true);
@@ -218,6 +245,17 @@ export default function Setup() {
 
       {/* Footer actions */}
       <div className="flex justify-end">
+
+        {user.role === "Accountant" && (
+          <button
+            className="mr-10 rounded-xl bg-gray-600 px-6 py-3 text-xl font-extrabold text-white cursor-pointer hover:bg-gray-700 transition"
+            onClick={() => setIsUploadModalOpen(true)}
+          >
+            Upload File
+          </button>
+        )}
+
+
         <button
           className="rounded-xl bg-indigo-700 px-6 py-3 text-xl font-extrabold text-white cursor-pointer"
           onClick={handleUpdate}
@@ -226,6 +264,17 @@ export default function Setup() {
           {saving ? "Updating..." : "Update"}
         </button>
       </div>
+
+      {/* File Upload Modal */}
+      {
+        user.role === "Accountant" && (
+          <FileUploadModal
+            isOpen={isUploadModalOpen}
+            onClose={() => setIsUploadModalOpen(false)}
+            onSubmit={handleFileUpload}
+          />
+        )
+      }
     </main>
   );
 }

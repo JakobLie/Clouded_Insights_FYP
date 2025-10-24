@@ -44,11 +44,17 @@ export default function KPIView({
     const intRange = parseInt(strRange, 10); // Convert "3M" -> 3, "6M" -> 6, "12M" -> 12 in base 10
     const rangedKPIObjects = orderedListOfKPIObjects.slice(-(intRange + 3)); // Returns new array from index of intRange to Newest KPI Object, add 3 to account for the forecast values
     const rangedChartData = rangedKPIObjects.map((KPIObject, index) => {
+      const value = KPIObject[KPIName];
+
+      // Check if it's a percentage (between 0 and 1 or between -1 and 0)
+      // Only multiply by 100 if it's a small decimal that looks like a percentage
+      const isPercentage = value !== null && value !== undefined && Math.abs(value) < 1;
+      const displayValue = isPercentage ? value * 100 : value;
 
       return {
         month: chartXLabels[index + (12 - intRange)],
-        Historical: index < intRange ? (KPIObject[KPIName] < 1 ? KPIObject[KPIName] * 100 : KPIObject[KPIName]) : null,
-        Forecasted: (index >= intRange || index === (intRange - 1)) ? (KPIObject[KPIName] < 1 ? KPIObject[KPIName] * 100 : KPIObject[KPIName]) : null
+        Historical: index < intRange ? displayValue : null,
+        Forecasted: (index >= intRange || index === (intRange - 1)) ? displayValue : null
       }
     })
 
@@ -76,14 +82,18 @@ export default function KPIView({
     // Set the current KPI name to the first card (which should be Profit/Cost/Sales)
     const firstCardName = leftCards[0]?.title || activeTab;
     setCurrentKPIName(firstCardName);
-
+    console.log("CombinedKPIsOrderedList from KPIChartFrame:", combinedKPIsOrderedList);
     updateChartData(currentKPIName, combinedKPIsOrderedList, currentRange);
   }, [leftCards, targets, historicalKPIsOrderedList, forecastedKPIsOrderedList]);
 
   // Click handler for cards
   function handleSelectCard(card) {
     const kpiKey = card.title;
-    const target = toNumber(card.lines[1].value) < 1 ? toNumber(card.lines[1].value) * 100 : toNumber(card.lines[1].value);
+    const targetValue = toNumber(card.lines[1].value);
+
+    // Check if it's a percentage (between 0 and 1 or between -1 and 0)
+    const isPercentage = targetValue !== null && !isNaN(targetValue) && Math.abs(targetValue) < 1;
+    const target = isPercentage ? targetValue * 100 : targetValue;
 
     setCurrentKPIName(kpiKey);
     setCurrentTargetValue(target);

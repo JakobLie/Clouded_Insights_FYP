@@ -114,7 +114,7 @@ export default function CostDrillDown() {
           return {
             title: name,
             lines: [
-              { label: "Forecasted", value: `${name === "Cost" ? "SGD" : ""}${formatCurrency(PNLValue)}${name !== "Cost" ? "%" : ""}` },
+              { label: "Forecasted", value: `${formatCurrency(PNLValue)}SGD` },
               { label: `Monthly ${isGrowth ? "Growth" : "Decline"}`, value: `${percentageDelta.toFixed(2)}%` }
             ],
             // Accent logic is reversed for cost, so a negative percentageDelta is green as cost is going down

@@ -97,17 +97,33 @@ export default function Profit() {
         // Create profit cards
         const profitKPINames = Object.keys(latestEntryKPI);
         const cards = profitKPINames.map((name) => {
-          const isGrowth = latestEntryKPI[name] <= upcomingForecastKPI[name];
-          const percentageDelta = ((upcomingForecastKPI[name] - latestEntryKPI[name]) / latestEntryKPI[name]) * 100;
-          const KPIValue = upcomingForecastKPI[name] < 1 ? upcomingForecastKPI[name] * 100 : upcomingForecastKPI[name];
-          const targetValue = processedTargets[name] < 1 ? processedTargets[name] * 100 : processedTargets[name];
+          const latestValue = latestEntryKPI[name];
+          const forecastValue = upcomingForecastKPI[name];
+
+          // Get the correct target value for this KPI
+          const targetRawValue = name === "Profit" ? profitTarget : processedTargets[name];
+
+          // Skip if any critical value is missing
+          if (latestValue === undefined || forecastValue === undefined || targetRawValue === undefined) {
+            console.warn(`Missing data for KPI: ${name}`);
+            return null;
+          }
+
+          // Check if values are percentages
+          const isPercentage = Math.abs(forecastValue) < 1;
+          const KPIValue = isPercentage ? forecastValue * 100 : forecastValue;
+          const targetValue = isPercentage ? targetRawValue * 100 : targetRawValue;
+
+          // Calculate difference from target
+          const forecastedDifferenceFromTarget = forecastValue - targetRawValue;
+          const percentageDelta = (forecastedDifferenceFromTarget / targetRawValue) * 100;
 
           return {
             title: name,
             lines: [
-              { label: "Forecasted", value: `${name === "Profit" ? "SGD" : ""}${formatCurrency(KPIValue)}${name !== "Profit" ? "%" : ""}` },
-              { label: "Target", value: `${name === "Profit" ? "SGD" : ""}${formatCurrency(name === "Profit" ? profitTarget : targetValue)}${name !== "Profit" ? "%" : ""}` },
-              { label: `Monthly ${isGrowth ? "Growth" : "Decline"}`, value: `${percentageDelta.toFixed(2)}%` }
+              { label: "Forecasted", value: `${formatCurrency(KPIValue)}${name === "Profit" ? "SGD" : "%"}` },
+              { label: "Target", value: `${formatCurrency(name === "Profit" ? profitTarget : targetValue)}${name === "Profit" ? "SGD" : "%"}` },
+              { label: `Percentage ${forecastedDifferenceFromTarget >= 0 ? "Surplus" : "Deficit"}`, value: `${Math.abs(percentageDelta).toFixed(2)}%` }
             ],
             accent: percentageDelta >= 0 ? "green" : (percentageDelta <= -5 ? "red" : "yellow")
           };

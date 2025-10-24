@@ -114,7 +114,7 @@ export default function SalesDrillDown() {
           return {
             title: name,
             lines: [
-              { label: "Forecasted", value: `${name === "Sales" ? "SGD" : ""}${formatCurrency(PNLValue)}${name !== "Sales" ? "%" : ""}` },
+              { label: "Forecasted", value: `${formatCurrency(PNLValue)}SGD` },
               { label: `Monthly ${isGrowth ? "Growth" : "Decline"}`, value: `${percentageDelta.toFixed(2)}%` }
             ],
             accent: isNaN(percentageDelta) ? "gray" : (percentageDelta >= 0 ? "green" : (percentageDelta <= -5 ? "red" : "yellow"))

@@ -8,7 +8,7 @@ INSERT INTO business_unit (alias, name) VALUES
 
 -- Insert employees
 INSERT INTO employee (id, name, email, role, business_unit, password_hash) VALUES
-    ('abcd-abcd-abcd', 'Jakob Lie', 'jakob@tsh.com.sg', 'BU Manager', 'MCE', 'hashed_password_1'),
+    ('0001-1005-2001', 'Jakob Lie', 'jakob@tsh.com.sg', 'Accountant', 'MCE', 'hashed_password_1'),
     ('abcd-abcd-abce', 'Jeremy Lin Kairui son of Lin Chee', 'jeremy@tsh.com.sg', 'BU Manager', 'MCE', 'hashed_password_1'),
     ('abcd-abcd-abcf', 'Sarah Thauheed', 'sarah@tsh.com.sg', 'BU Manager', 'HQ', 'hashed_password_1'),
     ('abcd-abcd-abcg', 'Benedict Ting', 'bennett@tsh.com.sg', 'Senior Manager', NULL, 'hashed_password_1'),
@@ -16,28 +16,28 @@ INSERT INTO employee (id, name, email, role, business_unit, password_hash) VALUE
 
 -- Insert parameters
 INSERT INTO parameter (employee_id, name, created_date, value, is_notified) VALUES
-    ('abcd-abcd-abcd', 'Sales Target', '2025-07-01', 40000, FALSE),
-    ('abcd-abcd-abcd', 'Cost Budget', '2025-07-01', 20000, FALSE),
-    ('abcd-abcd-abcd', 'Sales Target', '2025-09-15', 101, FALSE),
-    ('abcd-abcd-abcd', 'Cost Budget', '2025-09-15', 102, FALSE),
-    ('abcd-abcd-abcd', 'Gross Profit Margin', '2025-09-15', 0.11, FALSE),
-    ('abcd-abcd-abcd', 'Operating Profit Margin', '2025-09-15', 0.12, FALSE),
-    ('abcd-abcd-abcd', 'Net Profit Margin', '2025-09-15', 0.13, FALSE),
-    ('abcd-abcd-abcd', 'Quick Ratio', '2025-09-15', 0.14, FALSE),
-    ('abcd-abcd-abcd', 'Return On Sales', '2025-09-15', 0.21, FALSE),
-    ('abcd-abcd-abcd', 'Days Sales Outstanding', '2025-09-15', 0.22, FALSE),
-    ('abcd-abcd-abcd', 'Receivables Turnover', '2025-09-15', 0.23, FALSE),
-    ('abcd-abcd-abcd', 'Cost Of Goods Sold Ratio', '2025-09-15', 0.31, FALSE),
-    ('abcd-abcd-abcd', 'Days Payable Outstanding', '2025-09-15', 0.32, FALSE),
-    ('abcd-abcd-abcd', 'Overhead Ratio', '2025-09-15', 0.33, FALSE);
+    ('0001-1005-2001', 'Sales Target', '2025-07-01', 9500000, FALSE),
+    ('0001-1005-2001', 'Cost Budget', '2025-07-01', 8500000, FALSE),
+    ('0001-1005-2001', 'Sales Target', '2025-09-15', 9000000, FALSE),
+    ('0001-1005-2001', 'Cost Budget', '2025-09-15', 8000000, FALSE),
+    ('0001-1005-2001', 'Gross Profit Margin', '2025-09-15', 0.30, FALSE),
+    ('0001-1005-2001', 'Operating Profit Margin', '2025-09-15', 0.10, FALSE),
+    ('0001-1005-2001', 'Net Profit Margin', '2025-09-15', 0.075, FALSE),
+    ('0001-1005-2001', 'Quick Ratio', '2025-09-15', 1.50, FALSE),
+    ('0001-1005-2001', 'Return On Sales', '2025-09-15', 0.075, FALSE),
+    ('0001-1005-2001', 'Days Sales Outstanding', '2025-09-15', 60, FALSE),
+    ('0001-1005-2001', 'Receivables Turnover', '2025-09-15', 9, FALSE),
+    ('0001-1005-2001', 'Cost Of Goods Sold Ratio', '2025-09-15', 0.70, FALSE),
+    ('0001-1005-2001', 'Days Payable Outstanding', '2025-09-15', 60, FALSE),
+    ('0001-1005-2001', 'Overhead Ratio', '2025-09-15', 0.175, FALSE);
 
 -- Insert notifications
 INSERT INTO notification (employee_id, type, subject, body, is_read,created_at) VALUES 
-    ('abcd-abcd-abcd', 'ALERT', 'Prediction for January Profit is more than 5% below Target', 'Predicted Profit: SGD1,000,000\\nTarget Profit: SGD2,000,000', FALSE, '2025-09-01 00:00:00'),
-    ('abcd-abcd-abcd', 'ALERT', 'Budget for August 2025 has been exceeded.', 'Budget exceeded by 10%.', FALSE, '2025-09-01 00:00:00'),
-    ('abcd-abcd-abcd', 'ALERT', 'Budget for October 2025 is in the red.', 'Budget deficit of 5%.', FALSE,'2025-09-30 00:00:00'),
-    ('abcd-abcd-abcd', 'ALERT', 'Budget for September 2025 has been exceeded.', 'Budget exceeded by 15%.', FALSE, '2025-09-30 00:00:00'),
-    ('abcd-abcd-abcd', 'ALERT', 'Target for September 2025 is in the yellow.', 'Target at risk of not being met.', FALSE, '2025-08-31 00:00:00');
+    ('0001-1005-2001', 'ALERT', 'Prediction for January Profit is more than 5% below Target', 'Predicted Profit: SGD1,000,000\\nTarget Profit: SGD2,000,000', FALSE, '2025-09-01 00:00:00'),
+    ('0001-1005-2001', 'ALERT', 'Budget for August 2025 has been exceeded.', 'Budget exceeded by 10%.', FALSE, '2025-09-01 00:00:00'),
+    ('0001-1005-2001', 'ALERT', 'Budget for October 2025 is in the red.', 'Budget deficit of 5%.', FALSE,'2025-09-30 00:00:00'),
+    ('0001-1005-2001', 'ALERT', 'Budget for September 2025 has been exceeded.', 'Budget exceeded by 15%.', FALSE, '2025-09-30 00:00:00'),
+    ('0001-1005-2001', 'ALERT', 'Target for September 2025 is in the yellow.', 'Target at risk of not being met.', FALSE, '2025-08-31 00:00:00');
 
 -- COMMENTED OUT AS WILL BE FILLED WITH 03-insert.sql
 -- Insert P&L categories
