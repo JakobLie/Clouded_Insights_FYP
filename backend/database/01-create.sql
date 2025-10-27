@@ -28,7 +28,8 @@ CREATE TABLE pnl_category (
     code VARCHAR(15) PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     parent_code VARCHAR(15) REFERENCES pnl_category(code),
-    description TEXT
+    description TEXT,
+    trend VARCHAR(50) NOT NULL DEFAULT 'STATIC'
 );
 
 CREATE TABLE pnl_entry (

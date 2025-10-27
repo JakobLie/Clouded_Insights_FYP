@@ -12,7 +12,13 @@ A Flask-based RESTful API app using Flask-SQLAlchemy for managing employees and 
 - [API Endpoints](#api-endpoints)
   - [Employee APIs](#employee-apis)
   - [Parameter APIs](#parameter-apis)
-- [Input and Output Formats](#input-and-output-formats)
+  - [PNL Entry APIs](#pnl-entry-apis)
+  - [PNL Forecast APIs](#pnl-forecast-apis)
+  - [KPI APIs](#kpi-apis)
+  - [Load Data APIs](#load-data-api)
+- [Context](#context)
+  - [KPIs](#kpis)
+- [API Details](#api-details)
 - [Technologies](#technologies)
 
 ---
@@ -50,6 +56,7 @@ Default server runs at `http://127.0.0.1:5000`
 |--------|------------------------------------------|-------------------------------------------------------|
 | GET    | /parameter/all/&lt;employee_id&gt;/      | Get all parameters for an employee                    |
 | GET    | /parameter/latest/&lt;employee_id&gt;/   | Get latest parameters for an employee                 |
+| GET    | /parameter/15mths/&lt;employee_id&gt;/   | Get 12 months back and 3 months forward parameters    |
 | POST   | /parameter/batch/                        | Create or update multiple parameters for an employee  |
 
 #### PNL Entry APIs
@@ -67,15 +74,21 @@ Default server runs at `http://127.0.0.1:5000`
 | GET    | /forecast/sales/&lt;business_unit&gt;/   | Get next 3 months sales PNL forecasts for a BU         |
 | GET    | /forecast/cost/&lt;business_unit&gt;/    | Get next 3 months cost PNL forecasts for a BU          |
 
-#### PNL KPI APIs
+#### KPI APIs
 | Method | Endpoint                                 | Description                                           |
 |--------|------------------------------------------|-------------------------------------------------------|
+| GET    | /kpi/category/                           | Gets all KPI categories                               |
 | GET    | /kpi/profit/&lt;business_unit&gt;/       | Get last 12 months profit PNL KPIs for a BU           |
 | GET    | /kpi/sales/&lt;business_unit&gt;/        | Get last 12 months sales PNL KPIs for a BU            |
 | GET    | /kpi/cost/&lt;business_unit&gt;/         | Get last 12 months cost PNL KPIs for a BU             |
 | GET    | /kpi/f_profit/&lt;business_unit&gt;/     | Get next 3 months forecasted profit PNL KPIs for a BU |
 | GET    | /kpi/f_sales/&lt;business_unit&gt;/      | Get next 3 months forecasted sales PNL KPIs for a BU  |
 | GET    | /kpi/f_cost/&lt;business_unit&gt;/       | Get next 3 months forecasted cost PNL KPIs for a BU   |
+
+#### LOAD DATA API
+| Method | Endpoint                                 | Description                                           |
+|--------|------------------------------------------|-------------------------------------------------------|
+| POST   | /load_data/&lt;month&gt;/                | Loads data from "pnl_report" Excel/CSV file into DB, also orchestrates multiple processes   |
 
 ---
 ## Context
@@ -138,7 +151,7 @@ NPM=\frac{Overhead\space Costs}{Net\space Sales}\times 100\%
 
 ---
 
-## Details, Input and Output
+## API Details
 
 ### GET /employee/all/
 Simply gets all employee records in the database.
@@ -150,10 +163,11 @@ Simply gets all employee records in the database.
     "data": [
         {
             "business_unit": "BB1",
-            "created_at": "18-09-2025 12:16:34",
+            "created_at": "27-10-2025 05:23:27",
             "email": "jakob@tsh.com.sg",
             "id": "abcd-abcd-abcd",
             "name": "Jakob Lie",
+            "phone_number": "+6588888888",
             "role": "BU Manager"
         },
         ...
@@ -170,10 +184,11 @@ Gets the specific employee entry based on employee ID.
     "code": 200,
     "data": {
         "business_unit": "BB1",
-        "created_at": "18-09-2025 12:16:34",
+        "created_at": "27-10-2025 05:23:27",
         "email": "jakob@tsh.com.sg",
         "id": "abcd-abcd-abcd",
         "name": "Jakob Lie",
+        "phone_number": "+6588888888",
         "role": "BU Manager"
     }
 }
@@ -188,10 +203,11 @@ Gets the specific employee entry based on email. Take note that '@' values must 
     "code": 200,
     "data": {
         "business_unit": "BB1",
-        "created_at": "18-09-2025 12:16:34",
+        "created_at": "27-10-2025 05:23:27",
         "email": "jakob@tsh.com.sg",
         "id": "abcd-abcd-abcd",
         "name": "Jakob Lie",
+        "phone_number": "+6588888888",
         "role": "BU Manager"
     }
 }
@@ -212,12 +228,13 @@ Currently only uses simple password matching (password=password). Used for dummy
 ```json
 {
     "code": 200,
-    "data": {
+    "data": "data": {
         "business_unit": "BB1",
-        "created_at": "18-09-2025 12:16:34",
+        "created_at": "27-10-2025 05:23:27",
         "email": "jakob@tsh.com.sg",
         "id": "abcd-abcd-abcd",
         "name": "Jakob Lie",
+        "phone_number": "+6588888888",
         "role": "BU Manager"
     }
 }
@@ -225,8 +242,8 @@ Currently only uses simple password matching (password=password). Used for dummy
 
 ---
 
-### GET /parameter/all/<employee_id>/
-Gets all parameters, including historical and active parameters for the employee using employee ID. Also gets keys (months) in ascending order (earliest to latest).
+### GET /parameter/all/&lt;employee_id&gt;/
+Gets all parameters, including historical and active parameters for the employee using employee ID. Also gets keys (months) in ascending order (earliest to latest). Use in tandem with **GET /kpi/category/** to get the names of the parameters.
 
 **Output (JSON):**
 ```json
@@ -239,13 +256,14 @@ Gets all parameters, including historical and active parameters for the employee
             ...
         ],
         "parameters": {
-            "01-07-2025": {
-                "Cost Budget": 20000.0,
-                "Sales Target": 40000.0
+            "07-2025": {
+                "COST": 20000.0,
+                "SALES": 40000.0,
+                ...
             },
-            "15-09-2025": {
-                "Cost Budget": 102.0,
-                "Cost Of Goods Sold Ratio": 0.31,
+            "09-2025": {
+                "COGSR": 0.31,
+                "COST": 102.0,
                 ...
             },
             ...
@@ -254,32 +272,64 @@ Gets all parameters, including historical and active parameters for the employee
 }
 ```
 
-### GET /parameter/latest/<employee_id>/
-Gets only the active (latest) parameters for a given employee based on ID.
+### GET /parameter/latest/&lt;employee_id&gt;/
+Gets only the active (latest) parameters for a given employee based on ID. Use in tandem with **GET /kpi/category/** to get the names of the parameters.
 
 **Output (JSON):**
 ```json
 {
     "code": 200,
     "data": {
-        "Cost Budget": 102.0,
-        "Cost Of Goods Sold Ratio": 0.31,
+        "COGSR": 0.31,
+        "COST": 102.0,
         ...
     }
 }
 ```
 
+### GET /parameter/15mths/&lt;employee_id&gt;/
+Gets all the parameters for an employee 12 months back and 3 months forward, 15 months in total. Also gets keys (months) in ascending order (earliest to latest). Use in tandem with **GET /kpi/category/** to get the names of the parameters.
+
+**Output (JSON):**
+```json
+{
+    "code": 200,
+    "data": {
+        "keys": [
+            "10-2024",
+            "11-2024",
+            ...
+            "01-2026",
+        ],
+        "parameters": {
+            "07-2025": {
+                "COST": 20000.0,
+                "SALES": 40000.0,
+                ...
+            },
+            "09-2025": {
+                "COGSR": 0.31,
+                "COST": 102.0,
+                ...
+            }
+        }
+    }
+}
+```
+
 ### POST /parameter/batch/
-Processes the setting of multiple parameters. If the parameter has already been created within the same day, it will update the value associated (`"change_status":"updated"`). If not, it will create a new parameter entry in the database for the current day(`"change_status":"created"`). The current date is determined using timezone data provided in the system environment variables (provided in `compose.yaml`).
+Processes the setting of multiple parameters. If the parameter has already been created for the specified month, it will update the value associated (`"change_status":"updated"`). If not, it will create a new parameter entry in the database for the specified month (`"change_status":"created"`).
 
 **Input (JSON):**
 ```json
 {
     "employee_id": "abcd-abcd-abcd",
+    "month":"11-2025",
     "parameters":{
-        "Net Profit Margin": 0.15,
-        "Receivables Turnover": 0.30,
-        "Cost Budget": 23000
+        "COGSR": 0.31,
+        "COST": 102.0,
+        "DPO": 0.32,
+        ...
     }
 }
 ```
@@ -291,29 +341,30 @@ Processes the setting of multiple parameters. If the parameter has already been 
     "data": [
         {
             "change_status": "created",
-            "created_date": "25-09-2025",
             "employee_id": "abcd-abcd-abcd",
-            "is_notified": null,
-            "name": "Net Profit Margin",
-            "value": 0.15
+            "is_notified": false,
+            "kpi_alias": "COGSR",
+            "month": "10-2025",
+            "value": 0.31
         },
         {
             "change_status": "updated",
-            "created_date": "25-09-2025",
             "employee_id": "abcd-abcd-abcd",
-            "is_notified": null,
-            "name": "Receivables Turnover",
-            "value": 0.3
+            "is_notified": false,
+            "kpi_alias": "COST",
+            "month": "11-2025",
+            "value": 102.0
         },
         ...
-    ]
+    ],
+    "message": "Parameters set successfully :)"
 }
 ```
 
 ---
 
 ### GET /category/all/
-Gets all PNL categories, mapping their codes to their names and descriptions.
+Gets all PNL categories, mapping their codes to their names, descriptions, parent codes and trends.
 
 **Output (JSON):**
 ```json
@@ -321,16 +372,16 @@ Gets all PNL categories, mapping their codes to their names and descriptions.
     "code": 200,
     "data": {
         "5000-0000": {
-            "description": "",
-            "name": "SALES REVENUE"
+            "description": null,
+            "name": "SALES REVENUE",
+            "parent_code": null,
+            "trend": "STATIC"
         },
         "5000-A000": {
-            "description": "SALES REVENUE",
-            "name": "ASSEMBLY"
-        },
-        "5000-A001": {
-            "description": "SALES REVENUE/ASSEMBLY",
-            "name": "ASB SALES MODULE BB"
+            "description": null,
+            "name": "ASSEMBLY",
+            "parent_code": "5000-0000",
+            "trend": "STATIC"
         },
         ...
     }
@@ -370,15 +421,16 @@ Gets all sales PNL entries for the last 12 months for a business unit, under `"e
             "08-2025": {
                 "5000-A001": 50000.0,
                 "5000-M001": 20000.0,
-                "5000-M002": 10000.0
+                "5000-M002": 10000.0,
+                ...
             },
             ...
         },
         "keys": [
-            "10-2024",
+            "11-2024",
             ...
-            "08-2025",
-            "09-2025"
+            "09-2025",
+            "10-2025"
         ]
     }
 }
@@ -397,15 +449,16 @@ Gets all cost PNL entries for the last 12 months for a business unit, under `"en
         "entries": {
             "08-2025": {
                 "6004-0002": 5000.0,
-                "6005-1001": 3000.0
+                "6005-1001": 3000.0,
+                ...
             },
             ...
         },
         "keys": [
-            "10-2024",
+            "11-2024",
             ...
             "08-2025",
-            "09-2025"
+            "10-2025"
         ]
     }
 }
@@ -443,17 +496,18 @@ Gets all sales PNL forecasts for the next 3 months for a business unit, under `"
     "code": 200,
     "data": {
         "forecasts": {
-            "10-2025": {
+            "11-2025": {
                 "5000-A001": 55000.0,
                 "5000-M001": 22000.0,
-                "5000-M002": 11000.0
+                "5000-M002": 11000.0,
+                ...
             },
             ...
         },
         "keys": [
-            "10-2025",
             "11-2025",
-            "12-2025"
+            "12-2025",
+            "01-2026"
         ]
     }
 }
@@ -470,16 +524,17 @@ Gets all cost PNL forecasts for the next 3 months for a business unit, under `"f
     "code": 200,
     "data": {
         "forecasts": {
-            "10-2025": {
+            "11-2025": {
                 "6004-0002": 6000.0,
-                "6005-1001": 3500.0
+                "6005-1001": 3500.0,
+                ...
             },
             ...
         },
         "keys": [
-            "10-2025",
             "11-2025",
-            "12-2025"
+            "12-2025",
+            "01-2026"
         ]
     }
 }
@@ -487,8 +542,31 @@ Gets all cost PNL forecasts for the next 3 months for a business unit, under `"f
 
 ---
 
+### GET /kpi/category/
+Retrieves all KPI categories, mapping their alias to their category, description and full name. Used in tandem with Parameter APIs and other KPI APIs.
+
+**Output (JSON):**
+```json
+{
+    "code": 200,
+    "data": {
+        "COGSR": {
+            "category": "COST",
+            "description": "Cost of goods sold as a percentage of sales, showing production cost efficiency.",
+            "name": "COGS Ratio"
+        },
+        "COST": {
+            "category": "COST",
+            "description": "Total cost, summing cost of goods sold and operating expenses.",
+            "name": "Cost"
+        },
+        ...
+    }
+}
+```
+
 ### GET /kpi/profit/&lt;business_unit&gt;/
-Calculates all Profit KPIs for the last 12 months for a business unit, under `"kpis"`. The months will also be retrieved in ascending order (earliest to latest), under `"keys"`.
+Retrieves all Profit KPIs for the last 12 months for a business unit, under `"kpis"`. The months will also be retrieved in ascending order (earliest to latest), under `"keys"`.
 - The last 12 months are relative to the latest PNL entry and if non-existent, today's date.
 
 **Output (JSON):**
@@ -497,17 +575,18 @@ Calculates all Profit KPIs for the last 12 months for a business unit, under `"k
     "code": 200,
     "data": {
         "keys": [
-            "10-2024",
+            "11-2024",
             ...
             "08-2025",
-            "09-2025"
+            "10-2025"
         ],
         "kpis": {
             "01-2025": {
-                "Gross Profit Margin": 100.0,
-                "Net Profit Margin": 100.0,
-                "Operating Profit Margin": 100.0,
-                "Quick Ratio": null
+                "GPM": 1.1665,
+                "NPM": -7.377,
+                "OPM": -7.6969,
+                "PROF": -357432.66,
+                "QR": null
             },
             ...
         }
@@ -516,7 +595,7 @@ Calculates all Profit KPIs for the last 12 months for a business unit, under `"k
 ```
 
 ### GET /kpi/sales/&lt;business_unit&gt;/
-Calculates all Sales KPIs for the last 12 months for a business unit, under `"kpis"`. The months will also be retrieved in ascending order (earliest to latest), under `"keys"`.
+Retrieves all Sales KPIs for the last 12 months for a business unit, under `"kpis"`. The months will also be retrieved in ascending order (earliest to latest), under `"keys"`.
 - The last 12 months are relative to the latest PNL entry and if non-existent, today's date.
 
 **Output (JSON):**
@@ -525,16 +604,17 @@ Calculates all Sales KPIs for the last 12 months for a business unit, under `"kp
     "code": 200,
     "data": {
         "keys": [
-            "10-2024",
+            "11-2024",
             ...
             "08-2025",
-            "09-2025"
+            "10-2025"
         ],
         "kpis": {
             "01-2025": {
-                "Days Sales Outstanding (DSO)": null,
-                "Receivables Turnover": null,
-                "Return on Sales": 100.0
+                "DSO": null,
+                "ROS": -7.6969,
+                "RT": null,
+                "SALES": 4810000.0
             },
             ...
         }
@@ -543,7 +623,7 @@ Calculates all Sales KPIs for the last 12 months for a business unit, under `"kp
 ```
 
 ### GET /kpi/cost/&lt;business_unit&gt;/
-Calculates all Cost KPIs for the last 12 months for a business unit, under `"kpis"`. The months will also be retrieved in ascending order (earliest to latest), under `"keys"`.
+Retrieves all Cost KPIs for the last 12 months for a business unit, under `"kpis"`. The months will also be retrieved in ascending order (earliest to latest), under `"keys"`.
 - The last 12 months are relative to the latest PNL entry and if non-existent, today's date.
 
 **Output (JSON):**
@@ -559,9 +639,10 @@ Calculates all Cost KPIs for the last 12 months for a business unit, under `"kpi
         ],
         "kpis": {
             "01-2025": {
-                "COGS Ratio": 0.0,
-                "Days Payable Outstanding (DPO)": null,
-                "Overhead Ratio": 0.0
+                "COGSR": 98.8335,
+                "COST": 5202677.22,
+                "DPO": null,
+                "OHR": 8.5038
             },
             ...
         }
@@ -570,7 +651,7 @@ Calculates all Cost KPIs for the last 12 months for a business unit, under `"kpi
 ```
 
 ### GET /kpi/f_profit/&lt;business_unit&gt;/
-Calculates all forecasted Profit KPIs for the next 3 months for a business unit, under `"kpis"`. The months will also be retrieved in ascending order (earliest to latest), under `"keys"`.
+Retrieves all forecasted Profit KPIs for the next 3 months for a business unit, under `"kpis"`. The months will also be retrieved in ascending order (earliest to latest), under `"keys"`.
 - The next 3 months are relative to the latest PNL entry and if non-existent, today's date.
 
 **Output (JSON):**
@@ -579,16 +660,17 @@ Calculates all forecasted Profit KPIs for the next 3 months for a business unit,
     "code": 200,
     "data": {
         "keys": [
-            "10-2025",
             "11-2025",
-            "12-2025"
+            "12-2025",
+            "01-2026"
         ],
         "kpis": {
-            "10-2025": {
-                "Gross Profit Margin": 89.2045,
-                "Net Profit Margin": 89.2045,
-                "Operating Profit Margin": 89.2045,
-                "Quick Ratio": null
+            "11-2025": {
+                "GPM": 1.1665,
+                "NPM": -7.377,
+                "OPM": -7.6969,
+                "PROF": -357432.66,
+                "QR": null
             },
             ...
         }
@@ -597,7 +679,7 @@ Calculates all forecasted Profit KPIs for the next 3 months for a business unit,
 ```
 
 ### GET /kpi/f_sales/&lt;business_unit&gt;/
-Calculates all forecasted Sales KPIs for the next 3 months for a business unit, under `"kpis"`. The months will also be retrieved in ascending order (earliest to latest), under `"keys"`.
+Retrieves all forecasted Sales KPIs for the next 3 months for a business unit, under `"kpis"`. The months will also be retrieved in ascending order (earliest to latest), under `"keys"`.
 - The next 3 months are relative to the latest PNL entry and if non-existent, today's date.
 
 **Output (JSON):**
@@ -606,15 +688,16 @@ Calculates all forecasted Sales KPIs for the next 3 months for a business unit, 
     "code": 200,
     "data": {
         "keys": [
-            "10-2025",
             "11-2025",
-            "12-2025"
+            "12-2025",
+            "01-2026"
         ],
         "kpis": {
-            "10-2025": {
-                "Days Sales Outstanding (DSO)": null,
-                "Receivables Turnover": null,
-                "Return on Sales": 89.2045
+            "11-2025": {
+                "DSO": null,
+                "ROS": -7.6969,
+                "RT": null,
+                "SALES": 4810000.0
             },
             ...
         }
@@ -623,7 +706,7 @@ Calculates all forecasted Sales KPIs for the next 3 months for a business unit, 
 ```
 
 ### GET /kpi/f_cost/&lt;business_unit&gt;/
-Calculates all forecasted Cost KPIs for the next 3 months for a business unit, under `"kpis"`. The months will also be retrieved in ascending order (earliest to latest), under `"keys"`.
+Retrieves all forecasted Cost KPIs for the next 3 months for a business unit, under `"kpis"`. The months will also be retrieved in ascending order (earliest to latest), under `"keys"`.
 - The next 3 months are relative to the latest PNL entry and if non-existent, today's date.
 
 **Output (JSON):**
@@ -632,19 +715,119 @@ Calculates all forecasted Cost KPIs for the next 3 months for a business unit, u
     "code": 200,
     "data": {
         "keys": [
-            "10-2025",
             "11-2025",
-            "12-2025"
+            "12-2025",
+            "01-2026"
         ],
         "kpis": {
-            "10-2025": {
-                "COGS Ratio": 10.7955,
-                "Days Payable Outstanding (DPO)": null,
-                "Overhead Ratio": 0.0
+            "11-2025": {
+                "COGSR": 98.8335,
+                "COST": 5202677.22,
+                "DPO": null,
+                "OHR": 8.5038
             },
             ...
         }
     }
+}
+```
+
+---
+
+### POST /load_data/&lt;month&gt;/
+Loads all data in the monthly report to the database, including:
+1. Business Units (from BU header row)
+2. PNL Categories (from header columns)
+3. PNL Entries (from data rows per BU)
+4. KPI Entries (calculated on data to be uploaded)
+5. Parameters (simply autopopulates next 3 months with last set value for each employee)
+
+For each data entry, the API will check the database for existing entries for the specified month. If the value differs, it will update the value associated (`"change_status":"updated"`). If the value does not differ, no action will be made (`"change_status":"unchanged"`). If there is no existing entry, it will create a new entry in the database for the specified month (`"change_status":"created"`).
+
+On top of this, this API also orchestrates the following processes:
+1. Triggers forecasting services to retrain models and generate forecasts
+
+**Input (Form Data):**
+| Key        | Value                                |
+|------------|--------------------------------------|
+| pnl_report | PNL Monthly Report File (Excel/CSV)  |
+
+**Output (JSON):**
+```json
+{
+    "code": 200,
+    "data": {
+        "business_units": [
+            {
+                "alias": "TOTAL",
+                "bu_name": "Total",
+                "change_status": "unchanged"
+            },
+            {
+                "alias": "BB1",
+                "bu_name": "Box Build 1",
+                "change_status": "unchanged"
+            },
+	        ...
+        ],
+        "kpi_entries": [
+            {
+                "business_unit": "TOTAL",
+                "change_status": "created",
+                "kpi_alias": "PROF",
+                "month": "11-2025",
+                "value": -84984742.12
+            },
+            {
+                "business_unit": "TOTAL",
+                "change_status": "created",
+                "kpi_alias": "GPM",
+                "month": "11-2025",
+                "value": -177.8542
+            },
+            ...
+        ],
+        "parameters": [
+
+        ],
+        "pnl_categories": [
+            {
+                "change_status": "unchanged",
+                "code": "5000-0000",
+                "description": null,
+                "name": "SALES REVENUE",
+                "parent_code": null,
+                "trend": "STATIC"
+            },
+            {
+                "change_status": "unchanged",
+                "code": "5000-A000",
+                "description": null,
+                "name": "ASSEMBLY",
+                "parent_code": "5000-0000",
+                "trend": "STATIC"
+            },
+	        ...
+        ],
+        "pnl_entries": [
+            {
+                "business_unit": "TOTAL",
+                "change_status": "created",
+                "month": "11-2025",
+                "pnl_code": "5000-A001",
+                "value": 6000000.0
+            },
+            {
+                "business_unit": "BB1",
+                "change_status": "created",
+                "month": "11-2025",
+                "pnl_code": "5000-A001",
+                "value": 4000000.0
+            },
+	        ...
+        ]
+    },
+    "message": "Data has been loaded successfully. :) Triggering Machine Learning retraining and forecast generation..."
 }
 ```
 
@@ -658,3 +841,4 @@ Calculates all forecasted Cost KPIs for the next 3 months for a business unit, u
 - Flask-Cors
 - PostgreSQL
 - Docker Compose
+- Kafka
