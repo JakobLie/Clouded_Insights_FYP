@@ -59,6 +59,7 @@ for trend in TRENDS_LIST:
     for pnl_data_row in training_data:
         if pnl_data_row == "date":
             continue
+        
         context_data = training_data[pnl_data_row][-12:]  # Get last 12 data
 
         predictions = pred_model.predict(
