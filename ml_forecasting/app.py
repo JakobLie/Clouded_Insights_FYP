@@ -29,7 +29,7 @@ for trend in TRENDS_LIST:
     train_model = ModelRegistry.create(model_type)
 
     # PULL FROM DB
-    def getPNLEntriesByTrend(trend):  # Substitute using json data for DB Retrieval
+    def getPNLEntriesByTrend(trend, BU):  # Substitute using json data for DB Retrieval
         try:
             with open('data/train/data.json', 'r') as file:
                 data = json.load(file)
@@ -46,7 +46,7 @@ for trend in TRENDS_LIST:
 
     # TRAIN MODEL
     train_model.train(data=training_data, input_size=12,
-                      output_size=3, epochs=50)
+                    output_size=3, epochs=50)
 
     # SAVE WEIGHTS
     weight_extension_type = MODEL_TO_WEIGHT_EXTENSION_TYPE_MAP[model_type]
@@ -59,15 +59,18 @@ for trend in TRENDS_LIST:
     for pnl_data_row in training_data:
         if pnl_data_row == "date":
             continue
+
+        pnl_category, business_unit = pnl_data_row.split('::')
         
         context_data = training_data[pnl_data_row][-12:]  # Get last 12 data
 
         predictions = pred_model.predict(
-            series_name=pnl_data_row,
+            # business_unit = business_unit,
+            series_name=pnl_category,
             steps=3,
             last_values=context_data
         )
 
         # UPDATE DB
-        push_preds_to_DB = "unfinished"
+        push_preds_to_DB_by_category_and_ = "unfinished"
         print(f'Predictions for\nTrend: {trend}, Values: {predictions}')
