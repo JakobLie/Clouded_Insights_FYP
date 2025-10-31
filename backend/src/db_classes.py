@@ -65,13 +65,15 @@ class PNLCategory(db.Model):
     name = db.Column(db.String(100), nullable=False)
     parent_code = db.Column(db.String(15), db.ForeignKey('pnl_category.code'), nullable=True)
     description = db.Column(db.Text, nullable=True)
+    trend = db.Column(db.String(50), nullable=False, default='STATIC')
 
     def json(self):
         return {
             'code': self.code,
             'name': self.name,
             'parent_code': self.parent_code,
-            'description': self.description
+            'description': self.description,
+            'trend': self.trend
         }
     
 class PNLEntry(db.Model):
@@ -104,6 +106,21 @@ class PNLForecast(db.Model):
             'value': float(self.value) if self.value is not None else None
         }
     
+class KPICategory(db.Model):
+    __tablename__ = 'kpi_category'
+    alias = db.Column(db.String(10), primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    category = db.Column(db.String(50), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+
+    def json(self):
+        return {
+            'alias': self.alias,
+            'name': self.name,
+            'category': self.category,
+            'description': self.description
+        }
+    
 class Parameter(db.Model):
     __tablename__ = 'parameter'
     employee_id = db.Column(db.String(20), db.ForeignKey('employee.id'), primary_key=True)
@@ -119,21 +136,6 @@ class Parameter(db.Model):
             'month': self.month.strftime('%m-%Y'),
             'value': float(self.value) if self.value is not None else None,
             'is_notified': self.is_notified
-        }
-    
-class KPICategory(db.Model):
-    __tablename__ = 'kpi_category'
-    alias = db.Column(db.String(10), primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    category = db.Column(db.String(50), nullable=False)
-    description = db.Column(db.Text, nullable=True)
-
-    def json(self):
-        return {
-            'alias': self.alias,
-            'name': self.name,
-            'category': self.category,
-            'description': self.description
         }
 
 class KPIEntry(db.Model):
