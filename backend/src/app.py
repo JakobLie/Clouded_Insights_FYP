@@ -1,5 +1,5 @@
-from datetime import datetime, timedelta
-import math
+from datetime import datetime
+import json
 import re
 from dateutil.relativedelta import relativedelta
 from zoneinfo import ZoneInfo
@@ -11,6 +11,7 @@ import pandas as pd
 from sqlalchemy import or_, and_, func, select
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
+import redis
 
 import db_classes
 
@@ -25,6 +26,11 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_recycle': 299}
 db = SQLAlchemy(app)
 
 CORS(app)
+
+# Redis Producer
+REDIS_URL = os.environ.get("REDIS_URL").split(":")
+producer = redis.Redis(host=REDIS_URL[0], port=REDIS_URL[1])
+REDIS_TOPIC = os.environ.get("REDIS_TOPIC")
 
 # Constants
 timezone = ZoneInfo(os.environ.get("TIMEZONE"))
@@ -1240,8 +1246,11 @@ def calculateCostKPIs(entries):
 
     return output_data
 
-def triggerForecastService(): #TODO send message to ML service
-    pass
+@app.route("/test/trigger/", methods=['POST'])
+def triggerForecastService(): #TODO test
+    message = json.dumps("initiate") # replace "initiate" with data in future if needed
+    producer.publish(REDIS_TOPIC, message)
+    return jsonify({"status": "success", "message": "Forecast service triggered"}), 200
 
 ######################## Helper Functions ########################
 # General

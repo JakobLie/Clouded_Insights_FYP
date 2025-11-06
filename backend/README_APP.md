@@ -32,7 +32,7 @@ A Flask-based RESTful API app using Flask-SQLAlchemy for managing employees and 
 ### Running Flask App with Docker Compose
 1. Open Docker Desktop to start the Docker Daemon
 2. Navigate to the the project's `~/Backend/` folder containing the `compose.yaml` file in your command line
-3. Run the command `docker compose -p cloudedinsights up --build`
+3. Run the command `docker compose -p cloudedinsights up -d --build`
 
 Default server runs at `http://127.0.0.1:5000`
 
