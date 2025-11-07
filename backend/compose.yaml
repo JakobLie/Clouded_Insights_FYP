@@ -1,29 +1,58 @@
 volumes:
   db_data:
+  redis_data:
 
 services:
   db:
     image: postgres:latest
     container_name: local_postgres
+    ports:
+      - 5432:5432
     environment:
       POSTGRES_USER: cloudedinsights
       POSTGRES_PASSWORD: cloudedinsights
       POSTGRES_DB: tsh_db
     volumes:
-      - db_data:/var/lib/postgresql/data
+      - db_data:/var/lib/postgresql
       - ./database:/docker-entrypoint-initdb.d
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
     ports:
-      - "5432:5432"
-  
+      - 6379:6379
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+
   app:
     build:
       context: ./src
       dockerfile: Dockerfile
     container_name: app
     ports:
-      - "5000:5000"
+      - 5000:5000
     environment:
       DATABASE_URL: postgresql://cloudedinsights:cloudedinsights@db:5432/tsh_db
       TIMEZONE: Asia/Singapore
+      REDIS_URL: redis:6379
+      REDIS_TOPIC: trigger-forecast
     depends_on:
       - db
+      - redis
+
+  test:
+    build:
+      context: ./test
+      dockerfile: Dockerfile
+    container_name: test
+    ports:
+      - 5011:5011
+    environment:
+      PYTHONUNBUFFERED: 1
+      DATABASE_URL: postgresql://cloudedinsights:cloudedinsights@db:5432/tsh_db
+      REDIS_URL: redis:6379
+      REDIS_TOPIC: trigger-forecast
+    depends_on:
+      - db
+      - redis
