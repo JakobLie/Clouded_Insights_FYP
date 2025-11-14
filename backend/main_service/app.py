@@ -13,7 +13,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 import redis
 
-import db_classes
+from db_classes import *
 
 pd.set_option('display.max_columns', None)
 load_dotenv() # only for local development with .env file >> loads variables into system environment
@@ -38,7 +38,7 @@ timezone = ZoneInfo(os.environ.get("TIMEZONE"))
 ######################## EMPLOYEE ########################
 @app.route("/employee/all/", methods=['GET'])
 def getAllEmployees():
-    employees = db.session.scalars(db.select(db_classes.Employee)).all()
+    employees = db.session.scalars(db.select(Employee)).all()
     if employees:
         return jsonify(
             {
@@ -55,7 +55,7 @@ def getAllEmployees():
 
 @app.route("/employee/id/<employee_id>/", methods=['GET'])
 def getEmployeeById(employee_id):
-    employee = db.session.scalars(db.select(db_classes.Employee).filter_by(id=employee_id)).first()
+    employee = db.session.scalars(db.select(Employee).filter_by(id=employee_id)).first()
     if employee:
         return jsonify(
             {
@@ -72,7 +72,7 @@ def getEmployeeById(employee_id):
 
 @app.route("/employee/email/<email>/", methods=['GET'])
 def getEmployeeByEmail(email):
-    employee = db.session.scalars(db.select(db_classes.Employee).filter_by(email=email)).first()
+    employee = db.session.scalars(db.select(Employee).filter_by(email=email)).first()
     if employee:
         return jsonify(
             {
@@ -101,7 +101,7 @@ def authenticateEmployee():
             }
         ), 400
     
-    employee = db.session.scalars(db.select(db_classes.Employee).filter_by(email=data['email'])).first()
+    employee = db.session.scalars(db.select(Employee).filter_by(email=data['email'])).first()
 
     if not employee:
         return jsonify(
@@ -128,9 +128,9 @@ def authenticateEmployee():
 ######################## PARAMETER ########################
 @app.route("/parameter/all/<employee_id>/", methods=['GET'])
 def getParametersByEmployeeId(employee_id):
-    parameters = db.session.scalars(db.select(db_classes.Parameter)
+    parameters = db.session.scalars(db.select(Parameter)
         .filter_by(employee_id=employee_id)
-        .order_by(db_classes.Parameter.month)
+        .order_by(Parameter.month)
         ).all()
 
     output_data = {'keys': [], 'parameters': {}} # convert to appropriate output format
@@ -157,9 +157,9 @@ def getParametersByEmployeeId(employee_id):
 
 @app.route("/parameter/latest/<employee_id>/", methods=['GET'])
 def getLatestParametersByEmployeeId(employee_id):
-    parameters = db.session.scalars(db.select(db_classes.Parameter)
+    parameters = db.session.scalars(db.select(Parameter)
         .filter_by(employee_id=employee_id)
-        .order_by(db_classes.Parameter.month.desc())
+        .order_by(Parameter.month.desc())
         ).all()
 
     output_data = {} # convert to appropriate output format
@@ -190,15 +190,15 @@ def getLatestParametersByEmployeeId(employee_id):
 def get15MonthsParametersByEmployeeId(employee_id):
     latest_date = getLatestPNLEntryDate(employee_id)
 
-    parameters = db.session.scalars(db.select(db_classes.Parameter)
+    parameters = db.session.scalars(db.select(Parameter)
         .filter_by(employee_id=employee_id)
         .filter(
             and_(
-                db_classes.Parameter.month > latest_date - relativedelta(months=12),
-                db_classes.Parameter.month <= latest_date + relativedelta(months=3)
+                Parameter.month > latest_date - relativedelta(months=12),
+                Parameter.month <= latest_date + relativedelta(months=3)
             )
         )
-        .order_by(db_classes.Parameter.month)
+        .order_by(Parameter.month)
     ).all()
 
     output_data = {'keys': [], 'parameters': {}}
@@ -243,7 +243,7 @@ def setNewParameters():
     for param, val in data['parameters'].items():
         # Retrieve parameter: If exists, update. If not, create new.
         parameter = db.session.scalars(
-            db.select(db_classes.Parameter)
+            db.select(Parameter)
             .filter_by(employee_id=data['employee_id'])
             .filter_by(kpi_alias=param)
             .filter_by(month=input_month)
@@ -257,7 +257,7 @@ def setNewParameters():
             output_data.append(output_param)
         else:
             print(f"No existing parameter found, proceeding to create \"{param}: {val}\"...")
-            parameter = db_classes.Parameter(
+            parameter = Parameter(
                 employee_id=data['employee_id'],
                 kpi_alias=param,
                 month=input_month,
@@ -289,7 +289,7 @@ def setNewParameters():
 ######################## PNL ENTRY ########################
 @app.route("/category/all/")
 def getAllPNLCategories():
-    categories = db.session.scalars(db.select(db_classes.PNLCategory)).all()
+    categories = db.session.scalars(db.select(PNLCategory)).all()
     if categories:
         return jsonify(
             {
@@ -313,7 +313,7 @@ def getAllPNLCategories():
 
 @app.route("/entry/individual/<pnl_code>/<bu_alias>/")
 def getPNLEntriesByCodeAndBU(pnl_code, bu_alias):
-    entries = db.session.scalars(db.select(db_classes.PNLEntry)
+    entries = db.session.scalars(db.select(PNLEntry)
         .filter_by(pnl_code=pnl_code)
         .filter_by(business_unit=bu_alias.upper())    
     ).all()
@@ -338,14 +338,14 @@ def getLast12MonthsSalesPNLEntriesByBU(bu_alias):
     latest_date = getLatestPNLEntryDate(bu_alias)
     print(f"Fetching based on latest month: {latest_date.strftime('%m-%Y')}")
 
-    entries = db.session.scalars(db.select(db_classes.PNLEntry)
+    entries = db.session.scalars(db.select(PNLEntry)
         .filter_by(business_unit=bu_alias.upper())
         .filter(or_(
-            db_classes.PNLEntry.pnl_code.like('5%'),
-            db_classes.PNLEntry.pnl_code.like('8%')
+            PNLEntry.pnl_code.like('5%'),
+            PNLEntry.pnl_code.like('8%')
         ))
-        .filter(db_classes.PNLEntry.month > latest_date - relativedelta(months=12))
-        .order_by(db_classes.PNLEntry.month)
+        .filter(PNLEntry.month > latest_date - relativedelta(months=12))
+        .order_by(PNLEntry.month)
     ).all()
 
     output_data = {'keys': [], 'entries': {}} # convert to appropriate output format
@@ -375,14 +375,14 @@ def getLast12MonthsCostPNLEntriesByBU(bu_alias):
     latest_date = getLatestPNLEntryDate(bu_alias)
     print(f"Fetching based on latest month: {latest_date.strftime('%m-%Y')}")
 
-    entries = db.session.scalars(db.select(db_classes.PNLEntry)
+    entries = db.session.scalars(db.select(PNLEntry)
         .filter_by(business_unit=bu_alias.upper())
         .filter(or_(
-            db_classes.PNLEntry.pnl_code.like('6%'),
-            db_classes.PNLEntry.pnl_code.like('9%')
+            PNLEntry.pnl_code.like('6%'),
+            PNLEntry.pnl_code.like('9%')
         ))
-        .filter(db_classes.PNLEntry.month > latest_date - relativedelta(months=12))
-        .order_by(db_classes.PNLEntry.month)
+        .filter(PNLEntry.month > latest_date - relativedelta(months=12))
+        .order_by(PNLEntry.month)
     ).all()
 
     output_data = {'keys': [], 'entries': {}} # convert to appropriate output format
@@ -410,7 +410,7 @@ def getLast12MonthsCostPNLEntriesByBU(bu_alias):
 ######################## PNL FORECAST ########################
 @app.route("/forecast/individual/<pnl_code>/<bu_alias>/")
 def getPNLForecastsByCodeAndBU(pnl_code, bu_alias):
-    forecasts = db.session.scalars(db.select(db_classes.PNLForecast)
+    forecasts = db.session.scalars(db.select(PNLForecast)
         .filter_by(pnl_code=pnl_code)
         .filter_by(business_unit=bu_alias.upper())
     ).all()
@@ -435,19 +435,19 @@ def getNext3MonthsSalesPNLForecastsByBU(bu_alias):
     latest_date = getLatestPNLEntryDate(bu_alias)
     print(f"Fetching based on latest month: {latest_date.strftime('%m-%Y')}")
 
-    forecasts = db.session.scalars(db.select(db_classes.PNLForecast)
+    forecasts = db.session.scalars(db.select(PNLForecast)
         .filter_by(business_unit=bu_alias.upper())
         .filter(or_(
-            db_classes.PNLForecast.pnl_code.like('5%'),
-            db_classes.PNLForecast.pnl_code.like('8%')
+            PNLForecast.pnl_code.like('5%'),
+            PNLForecast.pnl_code.like('8%')
         ))
         .filter(
             and_(
-                db_classes.PNLForecast.month > latest_date,
-                db_classes.PNLForecast.month <= latest_date + relativedelta(months=3)
+                PNLForecast.month > latest_date,
+                PNLForecast.month <= latest_date + relativedelta(months=3)
             )
         )
-        .order_by(db_classes.PNLForecast.month)
+        .order_by(PNLForecast.month)
     ).all()
 
     output_data = {'keys': [], 'forecasts': {}} # convert to appropriate output format
@@ -477,19 +477,19 @@ def getNext3MonthsCostPNLForecastsByBU(bu_alias):
     latest_date = getLatestPNLEntryDate(bu_alias)
     print(f"Fetching based on latest month: {latest_date.strftime('%m-%Y')}")
 
-    forecasts = db.session.scalars(db.select(db_classes.PNLForecast)
+    forecasts = db.session.scalars(db.select(PNLForecast)
         .filter_by(business_unit=bu_alias.upper())
         .filter(or_(
-            db_classes.PNLForecast.pnl_code.like('6%'),
-            db_classes.PNLForecast.pnl_code.like('9%')
+            PNLForecast.pnl_code.like('6%'),
+            PNLForecast.pnl_code.like('9%')
         ))
         .filter(
             and_(
-                db_classes.PNLForecast.month > latest_date,
-                db_classes.PNLForecast.month <= latest_date + relativedelta(months=3)
+                PNLForecast.month > latest_date,
+                PNLForecast.month <= latest_date + relativedelta(months=3)
             )
         )
-        .order_by(db_classes.PNLForecast.month)
+        .order_by(PNLForecast.month)
     ).all()
 
     output_data = {'keys': [], 'forecasts': {}} # convert to appropriate output format
@@ -517,7 +517,7 @@ def getNext3MonthsCostPNLForecastsByBU(bu_alias):
 ######################## KPI ########################
 @app.route("/kpi/category/")
 def getAllKPICategories():
-    kpi_categories = db.session.scalars(db.select(db_classes.KPICategory)).all()
+    kpi_categories = db.session.scalars(db.select(KPICategory)).all()
     if kpi_categories:
         return jsonify(
             {
@@ -543,19 +543,18 @@ def getLast12MonthsProfitKPIsByBU(bu_alias):
     latest_date = getLatestPNLEntryDate(bu_alias)
     print(f"Fetching based on latest month: {latest_date.strftime('%m-%Y')}")
 
-    entries = db.session.scalars(db.select(db_classes.KPIEntry)
+    entries = db.session.scalars(db.select(KPIEntry)
         .filter_by(business_unit=bu_alias.upper())
-        .join(db_classes.KPICategory, db_classes.KPIEntry.kpi_alias == db_classes.KPICategory.alias)
-        .where(db_classes.KPICategory.category == "PROFIT")
-        .filter(db_classes.KPIEntry.month > latest_date - relativedelta(months=12))
-        .filter(db_classes.KPIEntry.month <= latest_date)
-        .order_by(db_classes.KPIEntry.month)
+        .join(KPICategory, KPIEntry.kpi_alias == KPICategory.alias)
+        .where(KPICategory.category == "PROFIT")
+        .filter(KPIEntry.month > latest_date - relativedelta(months=12))
+        .filter(KPIEntry.month <= latest_date)
+        .order_by(KPIEntry.month)
     ).all()
 
     output_data = {'keys': [], 'kpis': {}} # convert to appropriate output format
     for entry in entries:
         entry = entry.json()
-        print(entry)
         if entry['month'] not in output_data['keys']:
             output_data['keys'].append(entry['month'])
             output_data['kpis'][entry['month']] = {}
@@ -580,19 +579,18 @@ def getLast12MonthsSalesKPIsByBU(bu_alias):
     latest_date = getLatestPNLEntryDate(bu_alias)
     print(f"Fetching based on latest month: {latest_date.strftime('%m-%Y')}")
 
-    entries = db.session.scalars(db.select(db_classes.KPIEntry)
+    entries = db.session.scalars(db.select(KPIEntry)
         .filter_by(business_unit=bu_alias.upper())
-        .join(db_classes.KPICategory, db_classes.KPIEntry.kpi_alias == db_classes.KPICategory.alias)
-        .where(db_classes.KPICategory.category == "SALES")
-        .filter(db_classes.KPIEntry.month > latest_date - relativedelta(months=12))
-        .filter(db_classes.KPIEntry.month <= latest_date)
-        .order_by(db_classes.KPIEntry.month)
+        .join(KPICategory, KPIEntry.kpi_alias == KPICategory.alias)
+        .where(KPICategory.category == "SALES")
+        .filter(KPIEntry.month > latest_date - relativedelta(months=12))
+        .filter(KPIEntry.month <= latest_date)
+        .order_by(KPIEntry.month)
     ).all()
 
     output_data = {'keys': [], 'kpis': {}} # convert to appropriate output format
     for entry in entries:
         entry = entry.json()
-        print(entry)
         if entry['month'] not in output_data['keys']:
             output_data['keys'].append(entry['month'])
             output_data['kpis'][entry['month']] = {}
@@ -617,23 +615,22 @@ def getLast12MonthsCostKPIsByBU(bu_alias):
     latest_date = getLatestPNLEntryDate(bu_alias)
     print(f"Fetching based on latest month: {latest_date.strftime('%m-%Y')}")
 
-    entries = db.session.scalars(db.select(db_classes.KPIEntry)
+    entries = db.session.scalars(db.select(KPIEntry)
         .filter_by(business_unit=bu_alias.upper())
-        .join(db_classes.KPICategory, db_classes.KPIEntry.kpi_alias == db_classes.KPICategory.alias)
-        .where(db_classes.KPICategory.category == "COST")
+        .join(KPICategory, KPIEntry.kpi_alias == KPICategory.alias)
+        .where(KPICategory.category == "COST")
         .filter(
             and_(
-                db_classes.KPIEntry.month > latest_date - relativedelta(months=12),
-                db_classes.KPIEntry.month <= latest_date
+                KPIEntry.month > latest_date - relativedelta(months=12),
+                KPIEntry.month <= latest_date
             )
         )
-        .order_by(db_classes.KPIEntry.month)
+        .order_by(KPIEntry.month)
     ).all()
 
     output_data = {'keys': [], 'kpis': {}} # convert to appropriate output format
     for entry in entries:
         entry = entry.json()
-        print(entry)
         if entry['month'] not in output_data['keys']:
             output_data['keys'].append(entry['month'])
             output_data['kpis'][entry['month']] = {}
@@ -658,23 +655,22 @@ def getForecasted3MonthsProfitKPIsByBU(bu_alias):
     latest_date = getLatestPNLEntryDate(bu_alias)
     print(f"Fetching based on latest month: {latest_date.strftime('%m-%Y')}")
 
-    entries = db.session.scalars(db.select(db_classes.KPIForecast)
+    entries = db.session.scalars(db.select(KPIForecast)
         .filter_by(business_unit=bu_alias.upper())
-        .join(db_classes.KPICategory, db_classes.KPIForecast.kpi_alias == db_classes.KPICategory.alias)
-        .where(db_classes.KPICategory.category == "PROFIT")
+        .join(KPICategory, KPIForecast.kpi_alias == KPICategory.alias)
+        .where(KPICategory.category == "PROFIT")
         .filter(
             and_(
-                db_classes.KPIForecast.month > latest_date,
-                db_classes.KPIForecast.month <= latest_date + relativedelta(months=3)
+                KPIForecast.month > latest_date,
+                KPIForecast.month <= latest_date + relativedelta(months=3)
             )
         )
-        .order_by(db_classes.KPIForecast.month)
+        .order_by(KPIForecast.month)
     ).all()
 
     output_data = {'keys': [], 'kpis': {}} # convert to appropriate output format
     for entry in entries:
         entry = entry.json()
-        print(entry)
         if entry['month'] not in output_data['keys']:
             output_data['keys'].append(entry['month'])
             output_data['kpis'][entry['month']] = {}
@@ -699,23 +695,22 @@ def getForecasted3MonthsSalesKPIsByBU(bu_alias):
     latest_date = getLatestPNLEntryDate(bu_alias)
     print(f"Fetching based on latest month: {latest_date.strftime('%m-%Y')}")
 
-    entries = db.session.scalars(db.select(db_classes.KPIForecast)
+    entries = db.session.scalars(db.select(KPIForecast)
         .filter_by(business_unit=bu_alias.upper())
-        .join(db_classes.KPICategory, db_classes.KPIForecast.kpi_alias == db_classes.KPICategory.alias)
-        .where(db_classes.KPICategory.category == "SALES")
+        .join(KPICategory, KPIForecast.kpi_alias == KPICategory.alias)
+        .where(KPICategory.category == "SALES")
         .filter(
             and_(
-                db_classes.KPIForecast.month > latest_date,
-                db_classes.KPIForecast.month <= latest_date + relativedelta(months=3)
+                KPIForecast.month > latest_date,
+                KPIForecast.month <= latest_date + relativedelta(months=3)
             )
         )
-        .order_by(db_classes.KPIForecast.month)
+        .order_by(KPIForecast.month)
     ).all()
 
     output_data = {'keys': [], 'kpis': {}} # convert to appropriate output format
     for entry in entries:
         entry = entry.json()
-        print(entry)
         if entry['month'] not in output_data['keys']:
             output_data['keys'].append(entry['month'])
             output_data['kpis'][entry['month']] = {}
@@ -740,23 +735,22 @@ def getForecasted3MonthsCostKPIsByBU(bu_alias):
     latest_date = getLatestPNLEntryDate(bu_alias)
     print(f"Fetching based on latest month: {latest_date.strftime('%m-%Y')}")
 
-    entries = db.session.scalars(db.select(db_classes.KPIForecast)
+    entries = db.session.scalars(db.select(KPIForecast)
         .filter_by(business_unit=bu_alias.upper())
-        .join(db_classes.KPICategory, db_classes.KPIForecast.kpi_alias == db_classes.KPICategory.alias)
-        .where(db_classes.KPICategory.category == "COST")
+        .join(KPICategory, KPIForecast.kpi_alias == KPICategory.alias)
+        .where(KPICategory.category == "COST")
         .filter(
             and_(
-                db_classes.KPIForecast.month > latest_date,
-                db_classes.KPIForecast.month <= latest_date + relativedelta(months=3)
+                KPIForecast.month > latest_date,
+                KPIForecast.month <= latest_date + relativedelta(months=3)
             )
         )
-        .order_by(db_classes.KPIForecast.month)
+        .order_by(KPIForecast.month)
     ).all()
 
     output_data = {'keys': [], 'kpis': {}} # convert to appropriate output format
     for entry in entries:
         entry = entry.json()
-        print(entry)
         if entry['month'] not in output_data['keys']:
             output_data['keys'].append(entry['month'])
             output_data['kpis'][entry['month']] = {}
@@ -799,18 +793,23 @@ def loadData(month):
     # Insert PNL Categories and Entries into DB
     indent_standard = len(df["Code"].iloc[0]) - len(df["Code"].iloc[0].lstrip(' '))
     prev_codes = [None]
+    prev_names = [""]
     for i, row in df.iterrows():
         # Determining parent-child relationship of categories using indentation
         tier = round( (len(row["Code"]) - len(row["Code"].lstrip(' '))) / indent_standard )
         if tier >= len(prev_codes):
             prev_codes.append(row["Code"].strip())
+            prev_names.append(row["Name"].strip())
         else:
             prev_codes[tier] = row["Code"].strip()
             prev_codes = prev_codes[:tier+1]
+            prev_names[tier] = row["Name"].strip()
+            prev_names = prev_names[:tier+1]
         parent = prev_codes[tier-1]
+        description = (">".join(prev_names[1:tier]) + ">") if len(prev_names)>1 else None
 
         row["Code"] = row["Code"].strip()
-        output_data["pnl_categories"].append(insertPNLCatPerRow(row, parent))
+        output_data["pnl_categories"].append(insertPNLCatPerRow(row, parent, description))
         output_data["pnl_entries"].extend(insertPNLEntriesPerRow(row, month))
 
     # Calculate and insert KPIs into DB
@@ -823,7 +822,7 @@ def loadData(month):
 
     try:
         db.session.commit()
-        # db.session.rollback() # TODO: Remove when ready
+        # db.session.rollback() # For testing
         
         # Trigger Forecast Service
         triggerForecastService()
@@ -892,36 +891,35 @@ def insertNext3MonthsDefaultParameters(month_str):
     
     # Get latest values for each parameter for each employee
     subquery = select(
-        db_classes.Parameter.employee_id,
-        db_classes.Parameter.kpi_alias,
-        func.max(db_classes.Parameter.month).label('max_month')
-    ).group_by(db_classes.Parameter.employee_id, db_classes.Parameter.kpi_alias).subquery()
-    stmt = select(db_classes.Parameter).join(
+        Parameter.employee_id,
+        Parameter.kpi_alias,
+        func.max(Parameter.month).label('max_month')
+    ).group_by(Parameter.employee_id, Parameter.kpi_alias).subquery()
+    stmt = select(Parameter).join(
         subquery,
-        (db_classes.Parameter.employee_id == subquery.c.employee_id) &
-        (db_classes.Parameter.kpi_alias == subquery.c.kpi_alias) &
-        (db_classes.Parameter.month == subquery.c.max_month)
+        (Parameter.employee_id == subquery.c.employee_id) &
+        (Parameter.kpi_alias == subquery.c.kpi_alias) &
+        (Parameter.month == subquery.c.max_month)
     )
     latest_params = db.session.scalars(stmt).all()
     latest_params = { (param.employee_id, param.kpi_alias): param.value for param in latest_params }
-    print(latest_params)
 
     # Get existing parameters for next 3 months (to avoid modification/error from creating row that exists)
-    existing_params = db.session.scalars(db.select(db_classes.Parameter)
+    existing_params = db.session.scalars(db.select(Parameter)
         .filter(
             and_(
-                db_classes.Parameter.month > current_month,
-                db_classes.Parameter.month <= current_month + relativedelta(months=3)
+                Parameter.month > current_month,
+                Parameter.month <= current_month + relativedelta(months=3)
             )
         )
-        .order_by(db_classes.Parameter.month)
+        .order_by(Parameter.month)
     ).all()
     existing_params = [ (param.employee_id, param.kpi_alias, param.month.strftime("%m-%Y")) for param in existing_params ]
     print(existing_params)
 
     # Parameters have to be updated for every KPI and every manager Employee
-    employee_ids = db.session.scalars(db.select(db_classes.Employee.id).where(db_classes.Employee.role.in_(["BU Manager", "Senior Manager"]))).all()
-    kpi_aliases = db.session.scalars(db.select(db_classes.KPICategory.alias)).all()
+    employee_ids = db.session.scalars(db.select(Employee.id).where(Employee.role.in_(["BU Manager", "Senior Manager"]))).all()
+    kpi_aliases = db.session.scalars(db.select(KPICategory.alias)).all()
 
     for eid in employee_ids:
         for kpi in kpi_aliases:
@@ -933,7 +931,7 @@ def insertNext3MonthsDefaultParameters(month_str):
                     continue
                 val = latest_params.get((eid, kpi), 0) # default to 0 if no previous value
                 print(f"Inserting parameter: {eid} - {kpi} - {mth.strftime('%m-%Y')} - {val}")
-                param = db_classes.Parameter(
+                param = Parameter(
                     employee_id = eid,
                     kpi_alias = kpi,
                     month = mth,
@@ -958,7 +956,7 @@ def insertBusinessUnits(series):
         # Retrieve business unit
         print(f"Checking database if BU exists: {val}")
         bu = db.session.scalars(
-            db.select(db_classes.BusinessUnit)
+            db.select(BusinessUnit)
             .filter_by(alias=val)
         ).first()
 
@@ -966,7 +964,7 @@ def insertBusinessUnits(series):
             print(f"\tExisting BU found, no action required: {bu.alias} - {bu.name}")
         else:
             print(f"\tNo existing BU found, proceeding to create: {val} - {val}")
-            bu = db_classes.BusinessUnit(
+            bu = BusinessUnit(
                 alias=val,
                 name=val
             )
@@ -977,14 +975,14 @@ def insertBusinessUnits(series):
         output_bus.append(out_bu)
     return output_bus
 
-def insertPNLCatPerRow(series, parent_code = None):
+def insertPNLCatPerRow(series, parent_code = None, description = None):
     code = series["Code"].strip()
     name = series["Name"].strip().upper()
     change_status = "unchanged"
 
     print(f"Checking database if PNL Category exists: {code}")
     pnl_cat = db.session.scalars(
-        db.select(db_classes.PNLCategory)
+        db.select(PNLCategory)
         .filter_by(code=code)
     ).first()
 
@@ -996,9 +994,16 @@ def insertPNLCatPerRow(series, parent_code = None):
             print(f"\t\tName mismatch, updating name: -> {name}")
             pnl_cat.name = name
             change_status = "updated"
+        if pnl_cat.parent_code == parent_code and pnl_cat.description == description:
+            print(f"\t\tParent code and description matches, no action required.")
+        else:
+            print(f"\t\tParent code or description mismatch, updating: -> ({parent_code}, {description})")
+            pnl_cat.parent_code = parent_code
+            pnl_cat.description = description
+            change_status = "updated"
     else:
         print(f"\tNo existing PNL Category found, proceeding to create: {code} - {name}")
-        pnl_cat = db_classes.PNLCategory(
+        pnl_cat = PNLCategory(
             code=code,
             name=name,
             description = None,
@@ -1035,7 +1040,7 @@ def insertPNLEntriesPerRow(series, month_str):
 
         print(f"Checking database if PNL Entry exists: {code} - {bu} - {month}")
         pnl_entry = db.session.scalars(
-            db.select(db_classes.PNLEntry)
+            db.select(PNLEntry)
             .filter_by(pnl_code=code, business_unit=bu, month=month)
         ).first()
 
@@ -1049,7 +1054,7 @@ def insertPNLEntriesPerRow(series, month_str):
                 change_status = "updated"
         else:
             print(f"\tNo existing PNL Entry found, proceeding to create: {code} - {bu} - {month} - {val}")
-            pnl_entry = db_classes.PNLEntry(
+            pnl_entry = PNLEntry(
                 pnl_code=code,
                 business_unit=bu,
                 month=month,
@@ -1080,7 +1085,7 @@ def insertKPIEntriesPerBU(df, bu, month_str):
 
         print(f"Checking database if KPI Entry exists: {kpi_alias} - {bu} - {month_str}")
         kpi_entry = db.session.scalars(
-            db.select(db_classes.KPIEntry)
+            db.select(KPIEntry)
             .filter_by(kpi_alias=kpi_alias, business_unit=bu, month=month)
         ).first()
 
@@ -1094,7 +1099,7 @@ def insertKPIEntriesPerBU(df, bu, month_str):
                 change_status = "updated"
         else:
             print(f"\tNo existing KPI Entry found, proceeding to create: {kpi_alias} - {bu} - {month_str} - {kpi_value}")
-            kpi_entry = db_classes.KPIEntry(
+            kpi_entry = KPIEntry(
                 kpi_alias=kpi_alias,
                 business_unit=bu,
                 month=month,
@@ -1255,9 +1260,9 @@ def triggerForecastService(): #TODO test
 ######################## Helper Functions ########################
 # General
 def getLatestPNLEntryDate(bu_alias):
-    latest_entry = db.session.scalars(db.select(db_classes.PNLEntry)
+    latest_entry = db.session.scalars(db.select(PNLEntry)
         .filter_by(business_unit=bu_alias.upper())
-        .order_by(db_classes.PNLEntry.month.desc())
+        .order_by(PNLEntry.month.desc())
     ).first()
     latest_date = datetime.strptime(latest_entry.json()['month'], "%m-%Y").date() if latest_entry else datetime.now().date()
     return latest_date
@@ -1267,10 +1272,10 @@ def getLast12MonthsPNLEntries(bu_alias):
     latest_date = getLatestPNLEntryDate(bu_alias)
     print(f"Fetching based on latest month: {latest_date.strftime('%m-%Y')}")
 
-    entries = db.session.scalars(db.select(db_classes.PNLEntry)
+    entries = db.session.scalars(db.select(PNLEntry)
         .filter_by(business_unit=bu_alias.upper())
-        .filter(db_classes.PNLEntry.month > latest_date - relativedelta(months=12))
-        .order_by(db_classes.PNLEntry.month)
+        .filter(PNLEntry.month > latest_date - relativedelta(months=12))
+        .order_by(PNLEntry.month)
     ).all()
 
     lookup_dict = {'keys': [], 'entries': {}} # convert to appropriate output format
@@ -1287,15 +1292,15 @@ def getNext3MonthsPNLForecasts(bu_alias):
     latest_date = getLatestPNLEntryDate(bu_alias)
     print(f"Fetching based on latest month: {latest_date.strftime('%m-%Y')}")
 
-    entries = db.session.scalars(db.select(db_classes.PNLForecast)
+    entries = db.session.scalars(db.select(PNLForecast)
         .filter_by(business_unit=bu_alias.upper())
         .filter(
             and_(
-                db_classes.PNLForecast.month > latest_date,
-                db_classes.PNLForecast.month <= latest_date + relativedelta(months=3)
+                PNLForecast.month > latest_date,
+                PNLForecast.month <= latest_date + relativedelta(months=3)
             )
         )
-        .order_by(db_classes.PNLForecast.month)
+        .order_by(PNLForecast.month)
     ).all()
 
     lookup_dict = {'keys': [], 'entries': {}} # convert to appropriate output format

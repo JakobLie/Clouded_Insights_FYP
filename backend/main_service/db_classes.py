@@ -82,6 +82,7 @@ class PNLEntry(db.Model):
     business_unit = db.Column(db.String(10), db.ForeignKey('business_unit.alias'), primary_key=True)
     month = db.Column(db.Date, primary_key=True)
     value = db.Column(db.Numeric(15, 2), nullable=True)
+    pnl_category = db.relationship('PNLCategory', backref='entries')
 
     def json(self):
         return {
