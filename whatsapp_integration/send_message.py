@@ -55,7 +55,8 @@ def send_whatsapp_custom_message(to_number, text):
 phone_numbers = ["6587654321", "6512345678"]
 message = "This is an automated message from NotificationBot of the CloudedInsights Business Account.\n\nNotifications regarding TSH's predicted PNL Performance will be sent via this conversation."
 
+print(send_whatsapp_custom_message("6596694584", message))
 
-for number in phone_numbers:
-    result = send_whatsapp_custom_message(number, message)
-    print(number, result)
+# for number in phone_numbers:
+#     result = send_whatsapp_custom_message(number, message)
+#     print(number, result)
