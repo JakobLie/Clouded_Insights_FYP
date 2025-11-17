@@ -4,6 +4,7 @@ from .SARIMAX.Model import  SARIMAXModel
 from .AutoETS.Model import AutoETSModel
 from .LSTM.Model import LSTMModel
 from .NBEATS.Model import NBeatsModel
+from .Static.Model import StaticModel
 
 from typing import Dict, Any, List, Tuple
 
@@ -14,7 +15,8 @@ class ModelRegistry:
         'sarimax': SARIMAXModel,
         'autoets': AutoETSModel,
         'nbeats': NBeatsModel,
-        'lstm': LSTMModel
+        'lstm': LSTMModel,
+        'static': StaticModel
     }
     
     # Instantiate empty model object, typically for training
