@@ -31,7 +31,7 @@ INSERT INTO parameter (employee_id, kpi_alias, month, value, is_notified) VALUES
     ('abcd-abcd-abcd', 'RT', '2025-09-15', 0.23, FALSE),
     ('abcd-abcd-abcd', 'COGSR', '2025-09-15', 0.31, FALSE),
     ('abcd-abcd-abcd', 'DPO', '2025-09-15', 0.32, FALSE),
-    ('abcd-abcd-abcd', 'OHR', '2025-09-15', 0.33, FALSE);
+    ('abcd-abcd-abcd', 'OHR', '2025-09-15', 0.33, FALSE),
     ('abcd-abcd-abce', 'SALES', '2025-07-01', 40000, FALSE),
     ('abcd-abcd-abce', 'COST', '2025-07-01', 20000, FALSE),
     ('abcd-abcd-abce', 'SALES', '2025-09-15', 101, FALSE),
