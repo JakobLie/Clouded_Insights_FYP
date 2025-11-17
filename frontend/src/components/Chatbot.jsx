@@ -30,7 +30,7 @@ export default function Chatbot() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'tinyllama', // or 'phi3' or 'gemma:2b'
+          model: 'phi3', // or 'phi3' or 'gemma:2b'
           prompt: input,
           stream: false
         }),
@@ -68,7 +68,7 @@ export default function Chatbot() {
       <div className="bg-gray-800 border-b border-gray-700 p-4">
         <div className="flex items-center gap-2">
           <Bot className="w-6 h-6 text-blue-400" />
-          <h1 className="text-xl font-semibold text-white">Ollama Chatbot (TinyLlama)</h1>
+          <h1 className="text-xl font-semibold text-white">Ollama Chatbot (Phi3)</h1>
         </div>
       </div>
 

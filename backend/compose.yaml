@@ -1,6 +1,7 @@
 volumes:
   db_data:
   redis_data:
+  ollama_data:
 
 services:
   db:
@@ -24,6 +25,20 @@ services:
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
+  
+  # After creating container run: docker exec -it ollama ollama pull phi3/gemma:2b/tinyllama
+  # phi3 -> 3.8GB, gemma:2b -> 1.4GB, tinyllama -> 637MB
+  # Only need to run once in the cli, then subsequently can just run docker build -up since the model is stored in volumes
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - 11434:11434
+    environment:
+      - OLLAMA_ORIGINS=*
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
 
   main_service:
     build:
