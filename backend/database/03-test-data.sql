@@ -2,9 +2,9 @@
 
 -- Insert employees
 INSERT INTO employee (id, name, email, phone_number, role, business_unit, password_hash) VALUES
-    ('abcd-abcd-abcd', 'Jakob Lie', NULL, NULL, 'BU Manager', 'BB1', 'hashed_password_1'),
+    ('abcd-abcd-abcd', 'Jakob Lie', 'jakob.lie.2022@scis.smu.edu.sg', '+6583885396', 'BU Manager', 'BB1', 'password'),
     ('abcd-abcd-abce', 'Jeremy Lin Kairui son of Lin Chee', 'jeremylin.2022@scis.smu.edu.sg', '+6596694584', 'BU Manager', 'MCE', 'hashed_password_1'),
-    ('abcd-abcd-abcf', 'Sarah Thauheed', NULL, NULL, 'BU Manager', 'HQ', 'hashed_password_1'),
+    ('abcd-abcd-abcf', 'Sarah Thauheed', 'sthauheed.2022@scis.smu.edu.sg', '+6582689919', 'BU Manager', 'HQ', 'hashed_password_1'),
     ('abcd-abcd-abcg', 'Benedict Ting', NULL, NULL, 'Senior Manager', 'TOTAL', 'hashed_password_1'),
     ('abcd-abcd-abch', 'Zachary Tay', NULL, NULL, 'Accountant', 'TOTAL', 'hashed_password_1');
 
@@ -18,6 +18,20 @@ INSERT INTO notification (employee_id, type, subject, body, is_read,created_at) 
 
 -- Insert parameters
 INSERT INTO parameter (employee_id, kpi_alias, month, value, is_notified) VALUES
+    ('abcd-abcd-abcd', 'SALES', '2025-07-01', 40000, FALSE),
+    ('abcd-abcd-abcd', 'COST', '2025-07-01', 20000, FALSE),
+    ('abcd-abcd-abcd', 'SALES', '2025-09-15', 101, FALSE),
+    ('abcd-abcd-abcd', 'COST', '2025-09-15', 102, FALSE),
+    ('abcd-abcd-abcd', 'GPM', '2025-09-15', 0.11, FALSE),
+    ('abcd-abcd-abcd', 'OPM', '2025-09-15', 0.12, FALSE),
+    ('abcd-abcd-abcd', 'NPM', '2025-09-15', 0.13, FALSE),
+    ('abcd-abcd-abcd', 'QR', '2025-09-15', 0.14, FALSE),
+    ('abcd-abcd-abcd', 'ROS', '2025-09-15', 0.21, FALSE),
+    ('abcd-abcd-abcd', 'DSO', '2025-09-15', 0.22, FALSE),
+    ('abcd-abcd-abcd', 'RT', '2025-09-15', 0.23, FALSE),
+    ('abcd-abcd-abcd', 'COGSR', '2025-09-15', 0.31, FALSE),
+    ('abcd-abcd-abcd', 'DPO', '2025-09-15', 0.32, FALSE),
+    ('abcd-abcd-abcd', 'OHR', '2025-09-15', 0.33, FALSE);
     ('abcd-abcd-abce', 'SALES', '2025-07-01', 40000, FALSE),
     ('abcd-abcd-abce', 'COST', '2025-07-01', 20000, FALSE),
     ('abcd-abcd-abce', 'SALES', '2025-09-15', 101, FALSE),
