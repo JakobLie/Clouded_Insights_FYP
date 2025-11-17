@@ -2,6 +2,7 @@
 
 import Navbar from "@/components/Navbar";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import Chatbot from "@/components/ChatBot";
 import { useAuth } from "@/components/AuthProvider";
 
 export default function AppLayout({ children }) {
@@ -17,6 +18,7 @@ export default function AppLayout({ children }) {
         </div>
       </section>
       {children}
+      <Chatbot />
     </>
   );
 }
