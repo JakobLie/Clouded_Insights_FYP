@@ -6,8 +6,8 @@ CREATE TABLE business_unit (
 CREATE TABLE employee (
     id VARCHAR(20) PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    phone_number VARCHAR(20) UNIQUE NOT NULL,
+    email VARCHAR(255) UNIQUE,
+    phone_number VARCHAR(20) UNIQUE,
     role VARCHAR(50) NOT NULL,
     business_unit VARCHAR(10) REFERENCES business_unit(alias),
     password_hash VARCHAR(128) NOT NULL,
@@ -29,7 +29,7 @@ CREATE TABLE pnl_category (
     name VARCHAR(100) NOT NULL,
     parent_code VARCHAR(15) REFERENCES pnl_category(code),
     description TEXT,
-    trend VARCHAR(50) NOT NULL DEFAULT 'STATIC'
+    trend VARCHAR(50) NOT NULL DEFAULT 'static'
 );
 
 CREATE TABLE pnl_entry (

@@ -136,7 +136,7 @@
 			"response": []
 		},
 		{
-			"name": "Parameter - Get Latest by Employee ID Copy",
+			"name": "Parameter - Get Latest by Employee ID",
 			"request": {
 				"method": "GET",
 				"header": [],
@@ -157,13 +157,34 @@
 			"response": []
 		},
 		{
+			"name": "Parameter - Get 15 Months by Employee ID",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5000/parameter/15mths/abcd-abcd-abcd",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"parameter",
+						"15mths",
+						"abcd-abcd-abcd"
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "Parameter - Set New (Batch)",
 			"request": {
 				"method": "POST",
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"employee_id\": \"abcd-abcd-abcd\",\r\n    \"parameters\":{\r\n        \"Net Profit Margin\": 0.15,\r\n        \"Receivables Turnover\": 0.30,\r\n        \"Cost Budget\": 23000,\r\n        \"New Target\": 21.33,\r\n        \"New Target 2\": 0.55\r\n    }\r\n}",
+					"raw": "{\r\n    \"employee_id\": \"abcd-abcd-abcd\",\r\n    \"month\":\"11-2025\",\r\n    \"parameters\":{\r\n        \"COGSR\": 0.31,\r\n        \"COST\": 102.0,\r\n        \"DPO\": 0.32,\r\n        \"DSO\": 0.22,\r\n        \"GPM\": 0.11,\r\n        \"NPM\": 0.13,\r\n        \"OHR\": 0.33,\r\n        \"OPM\": 0.12,\r\n        \"QR\": 0.14,\r\n        \"ROS\": 0.21,\r\n        \"RT\": 0.23,\r\n        \"SALES\": 101.0\r\n    }\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -354,6 +375,34 @@
 			"response": []
 		},
 		{
+			"name": "KPI/Parameter - All KPI Categories",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"employee_id\": \"abcd-abcd-abcd\",\r\n    \"parameters\":{\r\n        \"Net Profit Margin\": 0.15,\r\n        \"Receivables Turnover\": 0.30,\r\n        \"Cost Budget\": 23000,\r\n        \"New Target\": 21.33,\r\n        \"New Target 2\": 0.55\r\n    }\r\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5000/kpi/category/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"kpi",
+						"category",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "KPI - Get Last 12 Months (Profit)",
 			"request": {
 				"method": "GET",
@@ -479,6 +528,68 @@
 						"kpi",
 						"f_cost",
 						"bb1",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Load Data",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "pnl_report",
+							"type": "file",
+							"src": "postman-cloud:///1f0c167f-a0e5-4180-aff3-dcddf9c07db2"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:5000/load_data/10-2024/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"load_data",
+						"10-2024",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Trigger Forecast Service",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "pnl_report ",
+							"type": "file",
+							"src": "/C:/Users/jerem/Documents/SMU Y4/Final Year Project/SMU PC P N L .xls"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:5000/test/trigger/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"test",
+						"trigger",
 						""
 					]
 				}

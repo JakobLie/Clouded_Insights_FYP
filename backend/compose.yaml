@@ -25,34 +25,34 @@ services:
     volumes:
       - redis_data:/data
 
-  app:
+  main_service:
     build:
-      context: ./src
+      context: ./main_service
       dockerfile: Dockerfile
-    container_name: app
+    container_name: main_service
     ports:
       - 5000:5000
     environment:
       DATABASE_URL: postgresql://cloudedinsights:cloudedinsights@db:5432/tsh_db
       TIMEZONE: Asia/Singapore
       REDIS_URL: redis:6379
-      REDIS_TOPIC: trigger-forecast
+      REDIS_TOPIC: trigger-training-forecast
     depends_on:
       - db
       - redis
 
-  test:
+  forecast_service:
     build:
-      context: ./test
+      context: ./forecast_service
       dockerfile: Dockerfile
-    container_name: test
+    container_name: forecast_service
     ports:
       - 5011:5011
     environment:
       PYTHONUNBUFFERED: 1
       DATABASE_URL: postgresql://cloudedinsights:cloudedinsights@db:5432/tsh_db
       REDIS_URL: redis:6379
-      REDIS_TOPIC: trigger-forecast
+      REDIS_TOPIC: trigger-training-forecast
     depends_on:
       - db
       - redis
