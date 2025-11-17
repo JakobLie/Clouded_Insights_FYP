@@ -41,4 +41,3 @@ export function getMonthsLabels( latestMonth ) {
 
   return labels;
 }
-

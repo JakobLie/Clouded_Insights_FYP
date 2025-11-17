@@ -1,56 +1,182 @@
+"use client"
+
 import KPIView from "@/components/visualisation/KPIView";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/AuthProvider";
 import { formatCurrency } from "@/utils/currency-utils";
-import latestParameters from "@/mock_data/homePage/GetLatestParametersByEmployeeId.json"
-import last12MonthsCostKPIs from "@/mock_data/homePage/cost/GetLast12MonthsCostKPIsByBU.json"
-import next3MonthsCostKPIs from "@/mock_data/homePage/cost/GetNext3MonthsCostForecastByBU.json"
 
 export default function Cost() {
 
-  const targets = latestParameters.data;
+  // Get User Object
+  const { user, logout } = useAuth();
+  const router = useRouter();
 
-  const historicalCostKPIsKeys = last12MonthsCostKPIs.data.keys; // ordered array of "MM-YYYY" from oldest to newest
-  const historicalCostKPIsEntries = last12MonthsCostKPIs.data.entries; // unordered Objects of CostKPI Objects with "MM-YYYY" as Key
-  const historicalCostKPIsOrderedList = historicalCostKPIsKeys.map((date) => {
-    return historicalCostKPIsEntries[date]; // List of 12 KPI Entry Objects
-  }); // Convert to ordered list of CostKPI Objects from oldest to newest
+  // Set React Hooks
+  const [targets, setTargets] = useState({}); // Most recent Cost targets
+  const [historicalCostKPIsOrderedList, setHistoricalCostKPIsOrderedList] = useState([]); // 12 months historical
+  const [forecastedCostKPIsOrderedList, setForecastedCostKPIsOrderedList] = useState([]); // 3 months forecasted
+  const [latestEntryMonth, setLatestEntryMonth] = useState("");
+  const [costCards, setCostCards] = useState([]);
 
-  const forecastedCostKPIsKeys = next3MonthsCostKPIs.data.keys;
-  const forecastedCostKPIsEntries = next3MonthsCostKPIs.data.entries;
-  const forecastedCostKPIsEntriesOrderedList = forecastedCostKPIsKeys.map((date) => {
-    return forecastedCostKPIsEntries[date]; // List of 3 KPI Forecast Objects
-  });
+  // UX state
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Get most recent Cost KPI Object
-  const latestEntryMonth = historicalCostKPIsKeys[11];
-  const latestEntryKPI = historicalCostKPIsOrderedList[11];
+  // Redirect if not logged in
+  useEffect(() => {
+    if (!user) {
+      router.replace("/login");
+    };
+  }, [user, router]);
 
-  // Get upcoming Cost KPI Forecast e.g. if latestEntryMonth is Jan, get Feb Cost Forecast
-  const upcomingForecastKPI = forecastedCostKPIsEntriesOrderedList[0];
+  // Fetch all data once we have a user
+  useEffect(() => {
+    if (!user) return;
 
-  // Get Cost KPI Names to loop through for costCards creation
-  const costKPINames = Object.keys(latestEntryKPI);
+    const ac = new AbortController();
 
-  // Get cost target directly
-  const costTarget = targets["Cost Budget"];
+    async function loadAllData() {
+      setLoading(true);
+      setError(null);
 
-  // Create Objects for costCards to be generated in KPIView's StatCard Component
-  const costCards = costKPINames.map((name) => {
-    const isGrowth = latestEntryKPI[name] <= upcomingForecastKPI[name];
-    // percentageDelta may be negative if not growth but decline
-    const percentageDelta = ((upcomingForecastKPI[name] - latestEntryKPI[name]) / latestEntryKPI[name]) * 100;
-    const KPIValue = upcomingForecastKPI[name] < 1 ? upcomingForecastKPI[name] * 100 : upcomingForecastKPI[name];
-    const targetValue = targets[name] < 1 ? targets[name] * 100 : targets[name];
+      try {
+        // Fetch all three endpoints in parallel
+        const [targetsResponse, historicalDataResponse, forecastedDataResponse] = await Promise.all([
+          fetch(`http://localhost:5000/parameter/latest/${user.id}`, { signal: ac.signal }),
+          fetch(`http://localhost:5000/kpi/cost/${user.business_unit}`, { signal: ac.signal }),
+          fetch(`http://localhost:5000/kpi/f_cost/${user.business_unit}`, { signal: ac.signal })
+        ]);
 
-    return {
-      title: name,
-      lines: [
-        { label: "Forecasted", value: `${name === "Cost" ? "SGD" : ""}${formatCurrency(KPIValue)}${name !== "Cost" ? "%" : ""}` },
-        { label: "Target", value: `${name === "Cost" ? "SGD" : ""}${formatCurrency(name === "Cost" ? costTarget : targetValue)}${name !== "Cost" ? "%" : ""}` },
-        { label: `Monthly ${isGrowth ? "Growth" : "Decline"}`, value: `${percentageDelta.toFixed(2)}%` }
-      ],
-      accent: percentageDelta >= 0 ? "green" : (percentageDelta <= -5 ? "red" : "yellow")
+        // Check if all responses are OK
+        if (!targetsResponse.ok || !historicalDataResponse.ok || !forecastedDataResponse.ok) {
+          throw new Error(`HTTP Error!
+              \nTargets Data Status: ${targetsResponse.status}
+              \nHistorical Data Status: ${historicalDataResponse.status}
+              \nForecasted Data Status: ${forecastedDataResponse.status}`
+          );
+        }
+
+        // Parse all responses
+        const targetsData = await targetsResponse.json();
+        console.log('Fetched targets data:', targetsData);
+
+        const historicalData = await historicalDataResponse.json();
+        console.log('Fetched historical cost kpi data:', historicalData);
+
+        const forecastedData = await forecastedDataResponse.json();
+        console.log('Fetched forecasted cost kpi data:', forecastedData);
+
+        // Process targets data
+        const processedTargets = targetsData.data;
+        setTargets(processedTargets);
+
+        // Process historical data
+        const historicalKeys = historicalData.data.keys;
+        const historicalEntries = historicalData.data.kpis;
+        const historicalOrderedList = historicalKeys.map((date) => historicalEntries[date]);
+        setHistoricalCostKPIsOrderedList(historicalOrderedList);
+
+        // Process forecasted data
+        const forecastedKeys = forecastedData.data.keys;
+        const forecastedEntries = forecastedData.data.kpis;
+        const forecastedOrderedList = forecastedKeys.map((date) => forecastedEntries[date]);
+        setForecastedCostKPIsOrderedList(forecastedOrderedList);
+
+        // Get latest entry details
+        const latestMonth = historicalKeys[historicalKeys.length - 1];
+        setLatestEntryMonth(latestMonth);
+
+        // Get latest and upcoming KPI data
+        const latestEntryKPI = historicalOrderedList[historicalOrderedList.length - 1];
+        const upcomingForecastKPI = forecastedOrderedList[0];
+
+        // Calculate cost target
+        const costTarget = processedTargets["Cost Budget"];
+
+        // Create cost cards
+        const costKPINames = Object.keys(latestEntryKPI);
+        const cards = costKPINames.map((name) => {
+          const latestValue = latestEntryKPI[name];
+          const forecastValue = upcomingForecastKPI[name];
+
+          // Get the correct target value for this KPI
+          const targetRawValue = name === "Cost" ? costTarget : processedTargets[name];
+
+          // Skip if any critical value is missing
+          if (latestValue === undefined || forecastValue === undefined || targetRawValue === undefined) {
+            console.warn(`Missing data for KPI: ${name}`);
+            return null;
+          }
+
+          // Check if values are percentages
+          const isPercentage = Math.abs(forecastValue) < 1;
+          const KPIValue = isPercentage ? forecastValue * 100 : forecastValue;
+          const targetValue = isPercentage ? targetRawValue * 100 : targetRawValue;
+
+          // Calculate difference from target
+          const forecastedDifferenceFromTarget = forecastValue - targetRawValue;
+          const percentageDelta = (forecastedDifferenceFromTarget / targetRawValue) * 100;
+
+          return {
+            title: name,
+            lines: [
+              { label: "Forecasted", value: `${formatCurrency(KPIValue)}${name === "Cost" ? "SGD" : "%"}` },
+              { label: "Target", value: `${formatCurrency(name === "Cost" ? costTarget : targetValue)}${name === "Cost" ? "SGD" : "%"}` },
+              { label: `Percentage ${forecastedDifferenceFromTarget >= 0 ? "Surplus" : "Deficit"}`, value: `${Math.abs(percentageDelta).toFixed(2)}%` }
+            ],
+            accent: percentageDelta <= 0 ? "green" : (percentageDelta >= -5 ? "red" : "yellow")
+          };
+        });
+
+        // Sort cards: Profit/Cost first, then red, yellow, green
+        const sortedCards = cards.sort((a, b) => {
+          // Profit/Cost/Sales always comes first
+          if (a.title === "Cost") return -1;
+          if (b.title === "Cost") return 1;
+
+          // Then sort by accent: red, yellow, green
+          const accentOrder = { red: 0, yellow: 1, green: 2, gray: 3 };
+          return accentOrder[a.accent] - accentOrder[b.accent];
+        });
+
+        setCostCards(sortedCards);
+
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          console.log("Fetch aborted");
+          return;
+        }
+        console.error("Error loading parameters:", error);
+        setError(error.message);
+      } finally {
+        setLoading(false)
+      }
     }
-  })
+
+    loadAllData();
+
+    // Cleanup function to abort fetch if component unmounts
+    return () => ac.abort();
+
+  }, [user])
+
+  // Early returns after all hooks
+  if (!user) return null;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-xl">Loading...</div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-xl text-red-600">Error: {error}</div>
+      </div>
+    );
+  }
 
   return (
     <KPIView
@@ -59,7 +185,7 @@ export default function Cost() {
       latestEntryMonth={latestEntryMonth} // Most recent month that has an entry in format "MM-YYYY"
       targets={targets} // Object of latest Target Values
       historicalKPIsOrderedList={historicalCostKPIsOrderedList} // Ordered list of historical Cost KPI Objects from oldest to newest
-      forecastedKPIsOrderedList={forecastedCostKPIsEntriesOrderedList}  // Ordered list of forecast Cost KPI Objects from oldest to newest
+      forecastedKPIsOrderedList={forecastedCostKPIsOrderedList}  // Ordered list of forecast Cost KPI Objects from oldest to newest
     />
   );
 }

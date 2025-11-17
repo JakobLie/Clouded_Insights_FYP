@@ -1,6 +1,7 @@
 "use client";
 
 const ACCENT_MAP = {
+  gray: "bg-gray-200 border-gray-300",
   red: "bg-red-200 border-red-300",
   yellow: "bg-yellow-200 border-yellow-300",
   green: "bg-green-200 border-green-300"

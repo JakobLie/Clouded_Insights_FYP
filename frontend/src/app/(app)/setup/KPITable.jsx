@@ -1,10 +1,64 @@
+import { useState, useEffect } from "react";
 import { getCurrentDateFormatted } from "@/utils/time-utils";
 
-export default function KPITable({ defaultKPIValues, parameters }) {
+export default function KPITable({ defaultKPIValues, pastTargetsOrderedList, onChange }) {
 
-  const KPINames = Object.keys(defaultKPIValues || {});
-  const previousTargetsByDate = parameters.entries;
-  const previousTargetsOrderedDates = parameters.keys.reverse(); // Use reverse() to order Newest to Oldest
+  const EXCLUDE = new Set(["Sales Target", "Cost Budget", "Input Date"]);
+  const KPI_KEYS = Object.keys(defaultKPIValues || {}).filter(k => !EXCLUDE.has(k));
+
+  // Single state object for the entire form
+  const [formData, setFormData] = useState({});
+
+  // Initialize form data from defaults
+  useEffect(() => {
+    const initialData = {
+      "Sales Target": defaultKPIValues["Sales Target"] ?? "",
+      "Cost Budget": defaultKPIValues["Cost Budget"] ?? "",
+    };
+
+    // Convert decimal KPIs to whole percentages for display
+    KPI_KEYS.forEach(key => {
+      const value = defaultKPIValues[key];
+      initialData[key] = Number.isFinite(value) ? Math.round(value * 100) : "";
+    });
+
+    setFormData(initialData);
+  }, [defaultKPIValues]);
+
+  // Single change handler for all inputs
+  const handleInputChange = (fieldName, value) => {
+    const updatedData = {
+      ...formData,
+      [fieldName]: value
+    };
+    setFormData(updatedData);
+
+    // Notify parent with converted values (percentages back to decimals)
+    if (onChange) {
+      const payload = buildPayloadFromForm(updatedData);
+      onChange(payload);
+    }
+  };
+
+  // Convert form data to API format
+  const buildPayloadFromForm = (data) => {
+    const toNumber = (v) => {
+      const n = Number(String(v ?? "").replace(/[^\d.-]/g, ""));
+      return Number.isFinite(n) ? n : 0;
+    };
+
+    const payload = {
+      "Sales Target": toNumber(data["Sales Target"]),
+      "Cost Budget": toNumber(data["Cost Budget"]),
+    };
+
+    // Convert percentage inputs back to decimals for KPIs
+    KPI_KEYS.forEach(key => {
+      payload[key] = toNumber(data[key]) / 100;
+    });
+
+    return payload;
+  };
 
   return (
     <section className="rounded-xl">
@@ -17,7 +71,7 @@ export default function KPITable({ defaultKPIValues, parameters }) {
               <th className="text-center whitespace-nowrap">Sales target (SGD)</th>
               <th className="text-center whitespace-nowrap">Cost budget (SGD)</th>
 
-              {KPINames.map((KPIName) => (
+              {KPI_KEYS.map((KPIName) => (
                 <th key={KPIName} className="text-center whitespace-nowrap">
                   {KPIName} (%)
                 </th>
@@ -27,58 +81,71 @@ export default function KPITable({ defaultKPIValues, parameters }) {
             </tr>
           </thead>
 
+
+
           <tbody className="[&>tr>td]:px-4 [&>tr>td]:py-3 text-center">
             {/* Input row */}
             <tr className="align-middle">
               <td>
                 <input
                   type="number"
-                  className="h-10 rounded-md bg-gray-200 px-3 py-2 text-center"
+                  inputMode="decimal"
+                  className="h-10 rounded-md bg-gray-200 px-1 py-2 text-center pl-5 font-semibold"
+                  value={formData["Sales Target"] ?? ""}
+                  onChange={(e) => handleInputChange("Sales Target", e.target.value)}
                 />
               </td>
               <td>
                 <input
                   type="number"
-                  className="h-10 rounded-md bg-gray-200 px-3 py-2 text-center"
+                  inputMode="decimal"
+                  className="h-10 rounded-md bg-gray-200 px-1 py-2 text-center pl-5 font-semibold"
+                  value={formData["Cost Budget"] ?? ""}
+                  onChange={(e) => handleInputChange("Cost Budget", e.target.value)}
                 />
               </td>
 
-              {KPINames.map((KPIName) => (
-                <td key={KPIName}>
-                  <input
-                    type="number"
-                    className="h-10 rounded-md bg-gray-200 px-3 py-2 text-center"
-                    placeholder={(defaultKPIValues[KPIName] * 100).toFixed(0)}
-                  />
-                </td>
-              ))}
+              {KPI_KEYS.map((KPIName) => {
+                return (
+                  <td key={KPIName} >
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      className="h-10 rounded-md bg-gray-200 px-1 py-2 text-center pl-5 font-semibold"
+                      value={formData[KPIName] ?? ""}
+                      onChange={(e) => handleInputChange(KPIName, e.target.value)}
+                    />
+                  </td>
+                );
+              }
+              )}
 
               <td className="whitespace-nowrap">{getCurrentDateFormatted()}</td>
             </tr>
 
             {/* Historical rows */}
-            {(previousTargetsOrderedDates || {}).map((date) => (
-              <tr key={previousTargetsByDate[date]["Input Date"]} className="border-t">
+            {(pastTargetsOrderedList || []).map((parameterObject, index) => (
+              <tr key={parameterObject["Input Date"] || index} className="border-t">
                 <td className="whitespace-nowrap">
-                  {previousTargetsByDate[date]["Sales Target"] ?? "—"}
+                  {parameterObject["Sales Target"] ?? "—"}
                 </td>
                 <td className="whitespace-nowrap">
-                  {previousTargetsByDate[date]["Cost Budget"] ?? "—"}
+                  {parameterObject["Cost Budget"] ?? "—"}
                 </td>
 
-                {KPINames.map((KPIName) => (
-                  <td key={`${previousTargetsByDate[date]["Input Date"]}-${KPIName}`} className="whitespace-nowrap">
-                    {previousTargetsByDate[date][KPIName] !== undefined ? `${(previousTargetsByDate[date][KPIName] * 100).toFixed(0)}` : "—"}
+                {KPI_KEYS.map((KPIName) => (
+                  <td key={`${parameterObject["Input Date"]}-${KPIName}`} className="whitespace-nowrap">
+                    {parameterObject[KPIName] !== undefined ? `${(parameterObject[KPIName] * 100).toFixed(0)}` : "—"}
                   </td>
                 ))}
 
-                <td className="whitespace-nowrap">{previousTargetsByDate[date]["Input Date"]}</td>
+                <td className="whitespace-nowrap">{parameterObject["Input Date"]}</td>
               </tr>
             ))}
 
           </tbody>
         </table>
       </div>
-    </section>
+    </section >
   );
 }

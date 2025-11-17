@@ -1,4 +1,4 @@
-export default function KPIRouteLayout({ children }) {
+export default function VisualisationLayout({ children }) {
   return (
     <div className="min-h-screen bg-gray-50">
       {children}

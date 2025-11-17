@@ -9,6 +9,7 @@ INSERT INTO business_unit (alias, name) VALUES
     ('MCE', 'Mechanical Engineering'),
     ('TOTAL', 'Total');
 
+-- COMMENTED OUT AS WILL BE FILLED WITH 03-insert.sql
 -- Insert P&L categories
 INSERT INTO pnl_category (code, name, trend) VALUES
     ('5000-0000', 'SALES REVENUE', 'gradual_steady_increase'),

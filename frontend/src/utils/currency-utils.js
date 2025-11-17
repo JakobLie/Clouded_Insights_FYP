@@ -1,4 +1,11 @@
 export function formatCurrency(numberToFormat) {
-    numberToFormat = numberToFormat < 0 ? -numberToFormat : numberToFormat;
+    let isNegative = false;
+
+    if (numberToFormat < 0) {
+        isNegative = true;
+        numberToFormat *= (-1);
+        return "-"+numberToFormat.toLocaleString('en-US');
+    }
+
     return numberToFormat.toLocaleString('en-US');
 }

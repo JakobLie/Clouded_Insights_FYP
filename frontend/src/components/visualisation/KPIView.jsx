@@ -11,6 +11,7 @@ import { toNumber } from "@/utils/number-utils";
 
 // Theme Mapping for syncing style of parent container with chosen Left Side Card
 const THEME_MAP = {
+  gray: { panel: "border-gray-300 bg-gray-100", frame: "border-gray-300" },
   yellow: { panel: "border-yellow-300 bg-yellow-100", frame: "border-yellow-300" },
   red: { panel: "border-red-300 bg-red-100", frame: "border-red-300" },
   green: { panel: "border-green-400 bg-green-100", frame: "border-green-400" },
@@ -43,11 +44,17 @@ export default function KPIView({
     const intRange = parseInt(strRange, 10); // Convert "3M" -> 3, "6M" -> 6, "12M" -> 12 in base 10
     const rangedKPIObjects = orderedListOfKPIObjects.slice(-(intRange + 3)); // Returns new array from index of intRange to Newest KPI Object, add 3 to account for the forecast values
     const rangedChartData = rangedKPIObjects.map((KPIObject, index) => {
+      const value = KPIObject[KPIName];
+
+      // Check if it's a percentage (between 0 and 1 or between -1 and 0)
+      // Only multiply by 100 if it's a small decimal that looks like a percentage
+      const isPercentage = value !== null && value !== undefined && Math.abs(value) < 1;
+      const displayValue = isPercentage ? value * 100 : value;
 
       return {
         month: chartXLabels[index + (12 - intRange)],
-        Historical: index < intRange ? (KPIObject[KPIName] < 1 ? KPIObject[KPIName] * 100 : KPIObject[KPIName]) : null,
-        Forecasted: (index >= intRange || index === (intRange - 1)) ? (KPIObject[KPIName] < 1 ? KPIObject[KPIName] * 100 : KPIObject[KPIName]) : null
+        Historical: index < intRange ? displayValue : null,
+        Forecasted: (index >= intRange || index === (intRange - 1)) ? displayValue : null
       }
     })
 
@@ -57,6 +64,9 @@ export default function KPIView({
 
   // Initial chart data based off activeTab ("Profit"/"Sales"/"Cost")
   useEffect(() => {
+    // Wait until we have cards and data
+    if (leftCards.length === 0 || combinedKPIsOrderedList.length === 0) return;
+
     const salesTarget = targets["Sales Target"];
     const costBudget = targets["Cost Budget"];
     const profitTarget = salesTarget - costBudget;
@@ -69,13 +79,21 @@ export default function KPIView({
       setCurrentTargetValue(profitTarget);
     }
 
+    // Set the current KPI name to the first card (which should be Profit/Cost/Sales)
+    const firstCardName = leftCards[0]?.title || activeTab;
+    setCurrentKPIName(firstCardName);
+    console.log("CombinedKPIsOrderedList from KPIChartFrame:", combinedKPIsOrderedList);
     updateChartData(currentKPIName, combinedKPIsOrderedList, currentRange);
-  }, []);
+  }, [leftCards, targets, historicalKPIsOrderedList, forecastedKPIsOrderedList]);
 
   // Click handler for cards
   function handleSelectCard(card) {
     const kpiKey = card.title;
-    const target = toNumber(card.lines[1].value) < 1 ? toNumber(card.lines[1].value) * 100 : toNumber(card.lines[1].value);
+    const targetValue = toNumber(card.lines[1].value);
+
+    // Check if it's a percentage (between 0 and 1 or between -1 and 0)
+    const isPercentage = targetValue !== null && !isNaN(targetValue) && Math.abs(targetValue) < 1;
+    const target = isPercentage ? targetValue * 100 : targetValue;
 
     setCurrentKPIName(kpiKey);
     setCurrentTargetValue(target);
@@ -83,8 +101,8 @@ export default function KPIView({
   }
 
   // Handle style of parent container containing graphs and cards
-  const currentAccent = leftCards.find(c => c.title === currentKPIName)?.accent ?? "yellow";
-  const theme = THEME_MAP[currentAccent] ?? THEME_MAP.yellow;
+  const currentAccent = leftCards.find(c => c.title === currentKPIName)?.accent ?? "gray";
+  const theme = THEME_MAP[currentAccent] ?? THEME_MAP.gray;
 
   const tabLinks = [
     { href: "/profit", label: "Profit" },
@@ -117,7 +135,7 @@ export default function KPIView({
             <div
               className={`
                 space-y-3
-                md:max-h-[${activeTab === "Profit" ? "450px" : "480px"}] md:overflow-y-auto md:pr-2 md:pl-1 pt-3 pb-1
+                md:max-h-[480px] md:overflow-y-auto md:pr-2 md:pl-1 pt-3 pb-1
                 md:scroll-smooth md:snap-y md:snap-mandatory
                 md:overscroll-contain
               `}

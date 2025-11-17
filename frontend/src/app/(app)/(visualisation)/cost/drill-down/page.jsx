@@ -1,5 +1,182 @@
-export default function Temp() {
+"use client"
+
+import PNLDataView from "@/components/visualisation/PNLDataView";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/AuthProvider";
+import { formatCurrency } from "@/utils/currency-utils";
+
+export default function CostDrillDown() {
+
+  // Get User Object
+  const { user, logout } = useAuth();
+  const router = useRouter();
+
+  // Set React Hooks
+  const [historicalCostPNLOrderedList, setHistoricalCostPNLOrderedList] = useState([]); // 12 months historical
+  const [forecastedCostPNLOrderedList, setForecastedCostPNLOrderedList] = useState([]); // 3 months forecasted
+  const [latestEntryMonth, setLatestEntryMonth] = useState("");
+  const [costCards, setCostCards] = useState([]);
+  const [costPNLNames, setCostPNLNames] = useState([]);
+
+  // UX state
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Redirect if not logged in
+  useEffect(() => {
+    if (!user) {
+      router.replace("/login");
+    };
+  }, [user, router]);
+
+  // Fetch all data once we have a user
+  useEffect(() => {
+    if (!user) return;
+
+    const ac = new AbortController();
+
+    async function loadAllData() {
+      setLoading(true);
+      setError(null);
+
+      try {
+        // Fetch all three endpoints in parallel
+        const [targetsResponse, historicalDataResponse, forecastedDataResponse] = await Promise.all([
+          fetch(`http://localhost:5000/parameter/latest/${user.id}`, { signal: ac.signal }),
+          fetch(`http://localhost:5000/entry/cost/${user.business_unit}`, { signal: ac.signal }),
+          fetch(`http://localhost:5000/forecast/cost/${user.business_unit}`, { signal: ac.signal })
+        ]);
+
+        // Check if all responses are OK
+        if (!targetsResponse.ok || !historicalDataResponse.ok || !forecastedDataResponse.ok) {
+          throw new Error(`HTTP Error!
+              \nTargets Data Status: ${targetsResponse.status}
+              \nHistorical Data Status: ${historicalDataResponse.status}
+              \nForecasted Data Status: ${forecastedDataResponse.status}`
+          );
+        }
+
+        // Parse all responses
+        const targetsData = await targetsResponse.json();
+        console.log('Fetched targets data:', targetsData);
+
+        const historicalData = await historicalDataResponse.json();
+        console.log('Fetched historical cost kpi data:', historicalData);
+
+        const forecastedData = await forecastedDataResponse.json();
+        console.log('Fetched forecasted cost kpi data:', forecastedData);
+
+        // Process historical data
+        const historicalKeys = historicalData.data.keys;
+        const historicalEntries = historicalData.data.entries;
+        const historicalOrderedList = historicalKeys.map((date) => historicalEntries[date]);
+        setHistoricalCostPNLOrderedList(historicalOrderedList);
+
+        // Process forecasted data
+        const forecastedKeys = forecastedData.data.keys;
+        const forecastedEntries = forecastedData.data.forecasts;
+        const forecastedOrderedList = forecastedKeys.map((date) => forecastedEntries[date]);
+        setForecastedCostPNLOrderedList(forecastedOrderedList);
+
+        // Get latest entry details
+        const latestMonth = historicalKeys[historicalKeys.length - 1];
+        setLatestEntryMonth(latestMonth);
+
+        // Get latest and upcoming PNL data
+        const latestEntryPNL = historicalOrderedList[historicalOrderedList.length - 1];
+        const upcomingForecastPNL = forecastedOrderedList[0];
+
+        // Create cost cards
+        const costPNLNames = Object.keys(latestEntryPNL);
+        const cards = costPNLNames.map((name) => {
+
+          const latestValue = latestEntryPNL[name];
+          const forecastValue = upcomingForecastPNL[name];
+
+          // Check if values are missing or zero
+          if (latestValue === undefined || forecastValue === undefined ||
+            latestValue === 0 || forecastValue === 0) {
+            return {
+              title: name,
+              lines: [
+                { label: "Forecasted", value: "N/A" },
+                { label: "Monthly Change", value: "N/A" }
+              ],
+              accent: "gray"
+            };
+          }
+
+          const isGrowth = latestValue <= forecastValue;
+          const percentageDelta = ((forecastValue - latestValue) / latestValue) * 100;
+          const PNLValue = forecastValue < 1 ? forecastValue * 100 : forecastValue;
+
+          return {
+            title: name,
+            lines: [
+              { label: "Forecasted", value: `${formatCurrency(PNLValue)}SGD` },
+              { label: `Monthly ${isGrowth ? "Growth" : "Decline"}`, value: `${percentageDelta.toFixed(2)}%` }
+            ],
+            // Accent logic is reversed for cost, so a negative percentageDelta is green as cost is going down
+            accent: isNaN(percentageDelta) ? "gray" : (percentageDelta <= 0 ? "green" : (percentageDelta >= 5 ? "red" : "yellow"))
+          };
+        });
+
+        // Sort cards: red, yellow, green, gray
+        const sortedCards = cards.sort((a, b) => {
+          const accentOrder = { red: 0, yellow: 1, green: 2, gray: 3 };
+          return accentOrder[a.accent] - accentOrder[b.accent];
+        });
+
+        // Update the cost PNL names to match the sorted order (After sorting)
+        const sortedCostPNLNames = sortedCards.map(card => card.title);
+
+        setCostCards(sortedCards);
+        setCostPNLNames(sortedCostPNLNames)
+
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          console.log("Fetch aborted");
+          return;
+        }
+        console.error("Error loading parameters:", error);
+        setError(error.message);
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadAllData();
+
+    // Cleanup function to abort fetch if component unmounts
+    return () => ac.abort();
+
+  }, [user])
+
+  // Early returns after all hooks
+  if (!user) return null;
+  if (loading) {
     return (
-        <main>TO BE REPLACED</main>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-xl">Loading...</div>
+      </div>
     );
+  }
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-xl text-red-600">Error: {error}</div>
+      </div>
+    );
+  }
+
+  return (
+    <PNLDataView
+      leftCards={costCards} // Array of objects for StatCard Component
+      latestEntryMonth={latestEntryMonth} // Most recent month that has an entry in format "MM-YYYY"
+      historicalPNLDataOrderedList={historicalCostPNLOrderedList} // Ordered list of historical Cost PNL Objects from oldest to newest
+      forecastedPNLDataOrderedList={forecastedCostPNLOrderedList}  // Ordered list of forecast Cost PNL Objects from oldest to newest
+      PNLDataNames={costPNLNames} // To choose first graph in drill-down view
+    />
+  );
 }
