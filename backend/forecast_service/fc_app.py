@@ -129,6 +129,8 @@ def processMessage(message, dbSession):
     for bu, employees in bu_employee_dict.items():
         monthly_kpis = bu_kpis[bu]
         for emp in employees:
+            if emp["id"] not in employee_param_dict:
+                continue
             parameters = employee_param_dict[emp["id"]]
             if parameters:
                 flags = flagParameters(monthly_kpis, parameters, param_guide)
@@ -181,7 +183,8 @@ def flagParameters(monthly_kpis, parameters, param_guide):
     output_data = {}
     for mth, mth_kpis in monthly_kpis.items():
         output_data[mth] = {}
-        mth_params = parameters[mth]
+        if mth in parameters:
+            mth_params = parameters[mth]
         for kpi_alias in mth_kpis.keys():
             value = mth_kpis[kpi_alias]
             target = mth_params[kpi_alias]

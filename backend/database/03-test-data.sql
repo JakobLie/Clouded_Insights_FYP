@@ -3,7 +3,7 @@
 -- Insert employees
 INSERT INTO employee (id, name, email, phone_number, role, business_unit, password_hash) VALUES
     ('abcd-abcd-abcd', 'Jakob Lie', NULL, NULL, 'BU Manager', 'BB1', 'hashed_password_1'),
-    ('abcd-abcd-abce', 'Jeremy Lin Kairui son of Lin Chee', '+6596694584', 'jeremylin.2022@scis.smu.edu.sg', 'BU Manager', 'MCE', 'hashed_password_1'),
+    ('abcd-abcd-abce', 'Jeremy Lin Kairui son of Lin Chee', 'jeremylin.2022@scis.smu.edu.sg', '+6596694584', 'BU Manager', 'MCE', 'hashed_password_1'),
     ('abcd-abcd-abcf', 'Sarah Thauheed', NULL, NULL, 'BU Manager', 'HQ', 'hashed_password_1'),
     ('abcd-abcd-abcg', 'Benedict Ting', NULL, NULL, 'Senior Manager', 'TOTAL', 'hashed_password_1'),
     ('abcd-abcd-abch', 'Zachary Tay', NULL, NULL, 'Accountant', 'TOTAL', 'hashed_password_1');
