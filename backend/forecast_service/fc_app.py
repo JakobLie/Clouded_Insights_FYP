@@ -3,11 +3,16 @@ from dateutil.relativedelta import relativedelta
 import os
 import time
 from dotenv import load_dotenv
+import requests
 
 import pandas as pd
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 import redis
+
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 from db_classes import *
 from models.ModelRegistry import ModelRegistry
@@ -23,6 +28,12 @@ REDIS_URL = os.environ.get("REDIS_URL").split(":") #TODO: Might need to switch t
 REDIS_TOPIC = os.environ.get("REDIS_TOPIC")
 r = redis.Redis(host=REDIS_URL[0], port=REDIS_URL[1])
 consumer = r.pubsub()
+
+# Notification Constants
+WHATSAPP_PHONE_ID = os.getenv("WHATSAPP_PHONE_ID")
+WHATSAPP_ACCESS_TOKEN = os.getenv("WHATSAPP_ACCESS_TOKEN")
+SENDER_EMAIL = os.getenv("SENDER_EMAIL")
+SENDER_PASSWORD = os.getenv("SENDER_PASSWORD")
 
 # Forecasting Models Constants
 TREND_TO_MODEL_MAP = {
@@ -43,6 +54,8 @@ MODEL_TO_WEIGHT_EXTENSION_TYPE_MAP = {
     'nbeats': 'ckpt',
     'static': 'json'
 }
+TRAINING_DATA_MONTHS = 12
+FORECAST_DATA_MONTHS = 12
 
 # App Functionality
 def runConsumer():
@@ -211,13 +224,15 @@ def sendNotification(dbSession, employee, flags, forecasted_months):
     subject, body = craftNotificationContent(employee,flags, forecasted_months)
 
     output_data = insertDBNotification(dbSession, employee, subject, body)
-    sendWhatsappNotification(employee["phone_number"], subject, body)
-    sendEmailNotification(employee["email"], subject, body)
+    if employee["phone_number"]:
+        sendWhatsappNotification(employee["phone_number"], subject, body)
+    if employee["email"]:
+        sendEmailNotification(employee["email"], subject, body)
     
     return output_data
 
 def craftNotificationContent(employee, flags, forecasted_months):
-    subject = "Forecast Alert for " + employee["business_unit"]
+    subject = "[FORECAST ALERT] Business Unit: " + employee["business_unit"]
     body = []
 
     for i in range(len(forecasted_months)):
@@ -251,10 +266,41 @@ def insertDBNotification(dbSession, employee, subject, body):
         return {}
 
 def sendWhatsappNotification(phone_number, subject, body):
-    pass
+    url = f"https://graph.facebook.com/v22.0/{WHATSAPP_PHONE_ID}/messages"
+    headers = {
+        "Authorization": f"Bearer {WHATSAPP_ACCESS_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "messaging_product": "whatsapp",
+        "to": phone_number,      # single number
+        "type": "text",
+        "text": {"body": f"{subject}\n\n{body}"}
+    }
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        response.raise_for_status()
+        print(f" * WhatsApp message sent to {phone_number} successfully!")
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        return {f" * Error sending WhatsApp message to {phone_number}: {e}"}
+
 
 def sendEmailNotification(email, subject, body):
-    pass
+    message = MIMEMultipart()
+    message["From"] = f"Traffic-light Simulation Hub <{SENDER_EMAIL}>"
+    message["To"] = email
+    message["Subject"] = subject
+    message.attach(MIMEText(body, "plain"))
+
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls() # Upgrade the connection to a secure encrypted SSL/TLS connection
+            server.login(SENDER_EMAIL, SENDER_PASSWORD) # Log in to Gmail account
+            server.send_message(message) # Send the email
+        print(f" * Email sent to {email} successfully")
+    except Exception as e:
+        print(f" * Failed to send email to {email}: {e}")
 
 # Utility Functions
 def getLatestPNLEntryDate(dbSession):
@@ -269,7 +315,7 @@ def retrieveTrainingData(dbSession, latest_date):
     stmt = (
         select(PNLEntry)
         .join(PNLCategory, PNLCategory.code == PNLEntry.pnl_code)
-        .where(PNLEntry.month > latest_date - relativedelta(months=12))
+        .where(PNLEntry.month > latest_date - relativedelta(months=TRAINING_DATA_MONTHS))
         .order_by(PNLEntry.month)
     )
     entries = dbSession.scalars(stmt).all()
@@ -317,7 +363,7 @@ def retrieveForecastingData(dbSession, latest_date):
     stmt = (
         select(PNLEntry)
         .join(PNLCategory, PNLCategory.code == PNLEntry.pnl_code)
-        .where(PNLEntry.month > latest_date - relativedelta(months=12))
+        .where(PNLEntry.month > latest_date - relativedelta(months=FORECAST_DATA_MONTHS))
         .order_by(PNLEntry.month)
     )
     entries = dbSession.scalars(stmt).all()

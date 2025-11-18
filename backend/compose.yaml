@@ -68,6 +68,10 @@ services:
       DATABASE_URL: postgresql://cloudedinsights:cloudedinsights@db:5432/tsh_db
       REDIS_URL: redis:6379
       REDIS_TOPIC: trigger-training-forecast
+      WHATSAPP_PHONE_ID: ${WHATSAPP_PHONE_ID}
+      WHATSAPP_ACCESS_TOKEN: ${WHATSAPP_ACCESS_TOKEN}
+      SENDER_EMAIL: ${SENDER_EMAIL}
+      SENDER_PASSWORD: ${SENDER_PASSWORD}
     depends_on:
       - db
       - redis
