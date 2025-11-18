@@ -4,6 +4,7 @@ import { useState } from "react";
 
 export default function FileUploadModal({ isOpen, onClose, onSubmit }) {
   const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadMonth, setUploadMonth] = useState(""); // Add month state
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
@@ -18,18 +19,18 @@ export default function FileUploadModal({ isOpen, onClose, onSubmit }) {
     
     if (!file) return;
 
-    // Validate file type
+    // Validate file type - update to match your backend
     const validTypes = [
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
       'application/vnd.ms-excel', // .xls
-      'application/json'
+      'text/csv' // .csv
     ];
     
-    const validExtensions = ['.xlsx', '.xls', '.json'];
+    const validExtensions = ['.xlsx', '.xls', '.csv'];
     const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
     
     if (!validTypes.includes(file.type) && !validExtensions.includes(fileExtension)) {
-      setError('Please upload an Excel (.xlsx, .xls) or JSON (.json) file');
+      setError('Please upload an Excel (.xlsx, .xls) or CSV (.csv) file');
       return;
     }
 
@@ -61,16 +62,31 @@ export default function FileUploadModal({ isOpen, onClose, onSubmit }) {
     validateAndSetFile(file);
   };
 
+  const validateMonth = (month) => {
+    // Validate MM-YYYY format
+    const monthRegex = /^(0[1-9]|1[0-2])-\d{4}$/;
+    return monthRegex.test(month);
+  };
+
   const handleSubmit = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile || !uploadMonth) {
+      setError('Please select a file and enter a month');
+      return;
+    }
+
+    if (!validateMonth(uploadMonth)) {
+      setError('Please enter month in MM-YYYY format (e.g., 11-2025)');
+      return;
+    }
 
     setUploading(true);
     setError(null);
 
     try {
-      await onSubmit(selectedFile);
+      await onSubmit(selectedFile, uploadMonth);
       // Reset on success
       setSelectedFile(null);
+      setUploadMonth("");
       onClose();
     } catch (err) {
       setError(err.message || 'Failed to upload file');
@@ -81,6 +97,7 @@ export default function FileUploadModal({ isOpen, onClose, onSubmit }) {
 
   const handleClose = () => {
     setSelectedFile(null);
+    setUploadMonth("");
     setError(null);
     onClose();
   };
@@ -92,7 +109,7 @@ export default function FileUploadModal({ isOpen, onClose, onSubmit }) {
       <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-gray-800">Upload File</h2>
+          <h2 className="text-2xl font-bold text-gray-800">Upload P&L Report</h2>
           <button
             onClick={handleClose}
             className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
@@ -100,6 +117,24 @@ export default function FileUploadModal({ isOpen, onClose, onSubmit }) {
           >
             ×
           </button>
+        </div>
+
+        {/* Month Input */}
+        <div className="mb-4">
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            Report Month <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            placeholder="MM-YYYY (e.g., 11-2025)"
+            className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-indigo-500"
+            value={uploadMonth}
+            onChange={(e) => setUploadMonth(e.target.value)}
+            disabled={uploading}
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Enter the month for this P&L report in MM-YYYY format
+          </p>
         </div>
 
         {/* File Drop Zone */}
@@ -143,13 +178,13 @@ export default function FileUploadModal({ isOpen, onClose, onSubmit }) {
                 <input
                   type="file"
                   className="hidden"
-                  accept=".xlsx,.xls,.json"
+                  accept=".xlsx,.xls,.csv"
                   onChange={handleFileChange}
                   disabled={uploading}
                 />
               </label>
               <div className="text-xs text-gray-400 mt-2">
-                Supported formats: Excel (.xlsx, .xls) or JSON
+                Supported formats: Excel (.xlsx, .xls) or CSV
               </div>
             </div>
           )}
@@ -173,9 +208,9 @@ export default function FileUploadModal({ isOpen, onClose, onSubmit }) {
           </button>
           <button
             onClick={handleSubmit}
-            disabled={!selectedFile || uploading}
+            disabled={!selectedFile || !uploadMonth || uploading}
             className={`px-5 py-2 rounded-lg font-semibold transition ${
-              !selectedFile || uploading
+              !selectedFile || !uploadMonth || uploading
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 : 'bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer'
             }`}

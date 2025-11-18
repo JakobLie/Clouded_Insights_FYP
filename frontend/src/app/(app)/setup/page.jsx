@@ -94,16 +94,18 @@ export default function Setup() {
 
   // Init default KPI values if no historical, else use latest KPIs
   const fallbackDefaults = {
-    "Gross Profit Margin": 0.53,
-    "Operating Profit Margin": 0.42,
-    "Net Profit Margin": 0.31,
-    "Quick Ratio": 0.33,
-    "Return On Sales": 0.24,
-    "Days Sales Outstanding": 0.42,
-    "Receivables Turnover": 0.55,
-    "Cost Of Goods Sold Ratio": 0.66,
-    "Days Payable Outstanding": 0.47,
-    "Overhead Ratio": 0.39,
+    "SALES": 4000000,
+    "COST": 2000000,
+    "GPO": 0.53,
+    "OPM": 0.42,
+    "NPM": 0.31,
+    "QR": 0.33,
+    "ROS": 0.24,
+    "DSO": 0.42,
+    "RT": 0.55,
+    "COGSR": 0.66,
+    "DPO": 0.47,
+    "OHR": 0.39
   };
 
   const defaultKPIValues = useMemo(() => {
@@ -133,26 +135,35 @@ export default function Setup() {
   }
 
   // Handle file upload
-  const handleFileUpload = async (file) => {
-    // const formData = new FormData();
-    // formData.append('file', file);
-    // formData.append('employee_id', user.id);
+  const handleFileUpload = async (file, month) => {
+    try {
+      const formData = new FormData();
+      formData.append('pnl_report', file); // Match the key name in your Flask route
 
-    // const response = await fetch('http://localhost:5000/parameter/upload', {
-    //   method: 'POST',
-    //   body: formData,
-    // });
+      const response = await fetch(`http://localhost:5000/load_data/${month}/`, {
+        method: 'POST',
+        body: formData,
+        // Don't set Content-Type header - browser will set it automatically with boundary
+      });
 
-    // if (!response.ok) {
-    //   throw new Error(`HTTP Error! Status: ${response.status}`);
-    // }
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP Error! Status: ${response.status}`);
+      }
 
-    // const result = await response.json();
-    // console.log('Upload success:', result);
-
-    // // Refresh the parameters list
-    // // You might want to refetch the data here or add the new data to pastTargets
-    // window.location.reload(); // Simple approach, or call your loadParameters function
+      const result = await response.json();
+      console.log('Upload success:', result);
+      
+      // Show success message
+      alert(`Success: ${result.message}\n\nData loaded:\n- ${result.data.business_units.length} business units\n- ${result.data.pnl_entries.length} P&L entries\n- ${result.data.kpi_entries.length} KPI entries`);
+      
+      // Optionally reload the page to refresh data
+      // window.location.reload();
+      
+    } catch (err) {
+      console.error('Upload error:', err);
+      throw err; // Re-throw so the modal can display the error
+    }
   };
 
 
