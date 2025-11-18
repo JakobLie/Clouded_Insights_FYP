@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import KPITable from "./KPITable";
 import FileUploadModal from "./FileUploadModal";
-import { getCurrentDateFormatted } from "@/utils/time-utils";
+import { getCurrentDateFormatted, getCurrentMonthFormatted } from "@/utils/time-utils";
 
 export default function Setup() {
 
@@ -169,12 +169,14 @@ export default function Setup() {
         },
         body: JSON.stringify({
           "employee_id": user.id,
+          "month": getCurrentMonthFormatted(), // Add the month field!
           "parameters": newTargets
         })
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP Error! Status: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP Error! Status: ${response.status}`);
       }
 
       const result = await response.json();
@@ -197,7 +199,6 @@ export default function Setup() {
       setSaving(false);
     }
   };
-
 
   return (
     <main className="mx-auto max-w-5xl p-6 space-y-6">

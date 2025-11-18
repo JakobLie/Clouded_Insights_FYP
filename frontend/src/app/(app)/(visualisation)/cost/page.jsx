@@ -92,7 +92,7 @@ export default function Cost() {
         const upcomingForecastKPI = forecastedOrderedList[0];
 
         // Calculate cost target
-        const costTarget = processedTargets["Cost Budget"];
+        const costTarget = processedTargets["COST"];
 
         // Create cost cards
         const costKPINames = Object.keys(latestEntryKPI);
@@ -101,7 +101,7 @@ export default function Cost() {
           const forecastValue = upcomingForecastKPI[name];
 
           // Get the correct target value for this KPI
-          const targetRawValue = name === "Cost" ? costTarget : processedTargets[name];
+          const targetRawValue = name === "COST" ? costTarget : processedTargets[name];
 
           // Skip if any critical value is missing
           if (latestValue === undefined || forecastValue === undefined || targetRawValue === undefined) {
@@ -121,8 +121,8 @@ export default function Cost() {
           return {
             title: name,
             lines: [
-              { label: "Forecasted", value: `${formatCurrency(KPIValue)}${name === "Cost" ? "SGD" : "%"}` },
-              { label: "Target", value: `${formatCurrency(name === "Cost" ? costTarget : targetValue)}${name === "Cost" ? "SGD" : "%"}` },
+              { label: "Forecasted", value: `${formatCurrency(KPIValue)}${name === "COST" ? "SGD" : "%"}` },
+              { label: "Target", value: `${formatCurrency(name === "COST" ? costTarget : targetValue*100)}${name === "COST" ? "SGD" : "%"}` },
               { label: `Percentage ${forecastedDifferenceFromTarget >= 0 ? "Surplus" : "Deficit"}`, value: `${Math.abs(percentageDelta).toFixed(2)}%` }
             ],
             accent: percentageDelta <= 0 ? "green" : (percentageDelta >= -5 ? "red" : "yellow")
@@ -132,8 +132,8 @@ export default function Cost() {
         // Sort cards: Profit/Cost first, then red, yellow, green
         const sortedCards = cards.sort((a, b) => {
           // Profit/Cost/Sales always comes first
-          if (a.title === "Cost") return -1;
-          if (b.title === "Cost") return 1;
+          if (a.title === "COST") return -1;
+          if (b.title === "COST") return 1;
 
           // Then sort by accent: red, yellow, green
           const accentOrder = { red: 0, yellow: 1, green: 2, gray: 3 };

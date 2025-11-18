@@ -54,8 +54,8 @@ MODEL_TO_WEIGHT_EXTENSION_TYPE_MAP = {
     'nbeats': 'ckpt',
     'static': 'json'
 }
-TRAINING_DATA_MONTHS = 12
-FORECAST_DATA_MONTHS = 12
+TRAINING_DATA_MONTHS = 36
+FORECAST_DATA_MONTHS = 3
 
 # App Functionality
 def runConsumer():
@@ -346,7 +346,7 @@ def trainForTrend(trend_name,training_data):
         train_model = ModelRegistry.create(model_name)
 
         # TRAIN MODEL
-        train_model.train(data=training_data, input_size=12,
+        train_model.train(data=training_data, input_size=24,
                         output_size=3, epochs=50)
 
         # SAVE WEIGHTS

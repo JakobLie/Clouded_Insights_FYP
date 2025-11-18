@@ -3,7 +3,7 @@ import { getCurrentDateFormatted } from "@/utils/time-utils";
 
 export default function KPITable({ defaultKPIValues, pastTargetsOrderedList, onChange }) {
 
-  const EXCLUDE = new Set(["Sales Target", "Cost Budget", "Input Date"]);
+  const EXCLUDE = new Set(["SALES", "COST", "Input Date"]);
   const KPI_KEYS = Object.keys(defaultKPIValues || {}).filter(k => !EXCLUDE.has(k));
 
   // Single state object for the entire form
@@ -12,8 +12,8 @@ export default function KPITable({ defaultKPIValues, pastTargetsOrderedList, onC
   // Initialize form data from defaults
   useEffect(() => {
     const initialData = {
-      "Sales Target": defaultKPIValues["Sales Target"] ?? "",
-      "Cost Budget": defaultKPIValues["Cost Budget"] ?? "",
+      "SALES": defaultKPIValues["SALES"] ?? "",
+      "COST": defaultKPIValues["COST"] ?? "",
     };
 
     // Convert decimal KPIs to whole percentages for display
@@ -48,8 +48,8 @@ export default function KPITable({ defaultKPIValues, pastTargetsOrderedList, onC
     };
 
     const payload = {
-      "Sales Target": toNumber(data["Sales Target"]),
-      "Cost Budget": toNumber(data["Cost Budget"]),
+      "SALES": toNumber(data["SALES"]),
+      "COST": toNumber(data["COST"]),
     };
 
     // Convert percentage inputs back to decimals for KPIs
@@ -68,8 +68,8 @@ export default function KPITable({ defaultKPIValues, pastTargetsOrderedList, onC
           {/* Sticky header */}
           <thead className="bg-slate-600 text-white sticky top-0 ">
             <tr className="[&>th]:px-4 [&>th]:py-3 [&>th]:font-semibold ">
-              <th className="text-center whitespace-nowrap">Sales target (SGD)</th>
-              <th className="text-center whitespace-nowrap">Cost budget (SGD)</th>
+              <th className="text-center whitespace-nowrap">SALES (SGD)</th>
+              <th className="text-center whitespace-nowrap">COST (SGD)</th>
 
               {KPI_KEYS.map((KPIName) => (
                 <th key={KPIName} className="text-center whitespace-nowrap">
@@ -91,8 +91,8 @@ export default function KPITable({ defaultKPIValues, pastTargetsOrderedList, onC
                   type="number"
                   inputMode="decimal"
                   className="h-10 rounded-md bg-gray-200 px-1 py-2 text-center pl-5 font-semibold"
-                  value={formData["Sales Target"] ?? ""}
-                  onChange={(e) => handleInputChange("Sales Target", e.target.value)}
+                  value={formData["SALES"] ?? ""}
+                  onChange={(e) => handleInputChange("SALES", e.target.value)}
                 />
               </td>
               <td>
@@ -100,8 +100,8 @@ export default function KPITable({ defaultKPIValues, pastTargetsOrderedList, onC
                   type="number"
                   inputMode="decimal"
                   className="h-10 rounded-md bg-gray-200 px-1 py-2 text-center pl-5 font-semibold"
-                  value={formData["Cost Budget"] ?? ""}
-                  onChange={(e) => handleInputChange("Cost Budget", e.target.value)}
+                  value={formData["COST"] ?? ""}
+                  onChange={(e) => handleInputChange("COST", e.target.value)}
                 />
               </td>
 
@@ -127,10 +127,10 @@ export default function KPITable({ defaultKPIValues, pastTargetsOrderedList, onC
             {(pastTargetsOrderedList || []).map((parameterObject, index) => (
               <tr key={parameterObject["Input Date"] || index} className="border-t">
                 <td className="whitespace-nowrap">
-                  {parameterObject["Sales Target"] ?? "—"}
+                  {parameterObject["SALES"] ?? "—"}
                 </td>
                 <td className="whitespace-nowrap">
-                  {parameterObject["Cost Budget"] ?? "—"}
+                  {parameterObject["COST"] ?? "—"}
                 </td>
 
                 {KPI_KEYS.map((KPIName) => (

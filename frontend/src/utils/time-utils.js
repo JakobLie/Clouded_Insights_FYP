@@ -26,10 +26,9 @@ export function getCurrentMonthFormatted() {
     let year = today.getFullYear();
 
     // Add leading zeros to day and month if they are less than 10
-    day = day < 10 ? '0' + day : day;
     month = month < 10 ? '0' + month : month;
 
-    // Format the date as DD-MM-YYYY
+    // Format the date as MM-YYYY
     const formattedMonth = `${month}-${year}`;
 
     return formattedMonth;

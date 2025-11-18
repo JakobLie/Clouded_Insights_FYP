@@ -1,9 +1,9 @@
+"use client"
+
 import NotificationItem from "@/app/(app)/notifications/NotificationItem";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { useRouter } from "next/navigation";
-
-
 
 const SAMPLE = [
   {

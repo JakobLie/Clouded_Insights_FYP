@@ -25,7 +25,15 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_recycle': 299}
 
 db = SQLAlchemy(app)
 
-CORS(app)
+CORS(
+    app,
+    resources={r"/*": {
+            "origins": ["http://localhost:3000"],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type"]
+        }},
+    supports_credentials=True
+)
 
 # Redis Producer
 REDIS_URL = os.environ.get("REDIS_URL").split(":")

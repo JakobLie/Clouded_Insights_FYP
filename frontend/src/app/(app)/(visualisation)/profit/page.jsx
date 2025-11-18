@@ -92,7 +92,7 @@ export default function Profit() {
         const upcomingForecastKPI = forecastedOrderedList[0];
 
         // Calculate profit target
-        const profitTarget = processedTargets["Sales Target"] - processedTargets["Cost Budget"];
+        const profitTarget = processedTargets["SALES"] - processedTargets["COST"];
 
         // Create profit cards
         const profitKPINames = Object.keys(latestEntryKPI);
@@ -101,7 +101,7 @@ export default function Profit() {
           const forecastValue = upcomingForecastKPI[name];
 
           // Get the correct target value for this KPI
-          const targetRawValue = name === "Profit" ? profitTarget : processedTargets[name];
+          const targetRawValue = name === "PROF" ? profitTarget : processedTargets[name];
 
           // Skip if any critical value is missing
           if (latestValue === undefined || forecastValue === undefined || targetRawValue === undefined) {
@@ -121,19 +121,22 @@ export default function Profit() {
           return {
             title: name,
             lines: [
-              { label: "Forecasted", value: `${formatCurrency(KPIValue)}${name === "Profit" ? "SGD" : "%"}` },
-              { label: "Target", value: `${formatCurrency(name === "Profit" ? profitTarget : targetValue)}${name === "Profit" ? "SGD" : "%"}` },
+              { label: "Forecasted", value: `${formatCurrency(KPIValue)}${name === "PROF" ? "SGD" : "%"}` },
+              { label: "Target", value: `${formatCurrency(name === "PROF" ? profitTarget : targetValue*100)}${name === "PROF" ? "SGD" : "%"}` },
               { label: `Percentage ${forecastedDifferenceFromTarget >= 0 ? "Surplus" : "Deficit"}`, value: `${Math.abs(percentageDelta).toFixed(2)}%` }
             ],
             accent: percentageDelta >= 0 ? "green" : (percentageDelta <= -5 ? "red" : "yellow")
           };
         });
 
+        // Remove null entries before sorting
+        const validCards = cards.filter(card => card !== null);
+
         // Sort cards: Profit/Cost first, then red, yellow, green
-        const sortedCards = cards.sort((a, b) => {
+        const sortedCards = validCards.sort((a, b) => {
           // Profit/Cost/Sales always comes first
-          if (a.title === "Profit") return -1;
-          if (b.title === "Profit") return 1;
+          if (a.title === "PROF") return -1;
+          if (b.title === "PROF") return 1;
 
           // Then sort by accent: red, yellow, green
           const accentOrder = { red: 0, yellow: 1, green: 2, gray: 3 };
