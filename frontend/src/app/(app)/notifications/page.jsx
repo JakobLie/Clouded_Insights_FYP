@@ -223,6 +223,32 @@ export default function Notifications() {
 
   const hasUnreadNotifications = notifications.some((n) => !n.is_read);
 
+  // Sort notifications: unread first (by recency), then read (by recency)
+  const sortedNotifications = [...notifications].sort((a, b) => {
+    // If read status differs, unread comes first
+    if (a.is_read !== b.is_read) {
+      return a.is_read ? 1 : -1;
+    }
+    
+    // If same read status, sort by timestamp (most recent first)
+    // Parse timestamps for comparison
+    try {
+      const parseTimestamp = (ts) => {
+        const [datePart, timePart] = ts.split(' ');
+        const [day, month, year] = datePart.split('-');
+        const [hour, minute, second] = timePart.split(':');
+        return new Date(year, month - 1, day, hour, minute, second);
+      };
+      
+      const dateA = parseTimestamp(a.created_at);
+      const dateB = parseTimestamp(b.created_at);
+      
+      return dateB - dateA; // Most recent first
+    } catch (e) {
+      return 0; // Keep original order if parsing fails
+    }
+  });
+
   return (
     <main className="mx-auto max-w-4xl p-4 sm:p-6 bg-gray-50">
       <div className="flex items-center justify-between mb-4">
@@ -242,7 +268,7 @@ export default function Notifications() {
         </div>
       ) : (
         <div className="space-y-3">
-          {notifications.map((n) => (
+          {sortedNotifications.map((n) => (
             <NotificationItem
               key={n.id}
               {...mapNotificationToProps(n)}
@@ -255,3 +281,4 @@ export default function Notifications() {
     </main>
   );
 }
+
