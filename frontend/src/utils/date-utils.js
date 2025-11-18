@@ -25,7 +25,7 @@ export function getMonthsAfter( latestMonth, monthsAfter ) {
 // E.g. getMonthsLabels("01-2025") returns ["Jan", "Feb", ..... "Dec", "Jan", "Feb", "March"] for 15 total months
 export function getMonthsLabels( latestMonth ) {
 
-  const monthIndex = convertFormattedMonthToInt(latestMonth) - 1; // minus 1 since arrays start from 0
+  const monthIndex = convertFormattedMonthToInt(latestMonth); // minus 1 since arrays start from 0
   const orderedArrayOfMonths = [
     "Jan", "Feb", "Mar", "Apr", "May", "Jun",
     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"

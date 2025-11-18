@@ -31,20 +31,23 @@ export default function PNLDataView({
   const chartXLabels = getMonthsLabels(latestEntryMonth, currentRange);
 
   function updateChartData(PNLDataName, orderedListOfPNLDataObjects, strRange) {
-    const intRange = parseInt(strRange, 10); // Convert "3M" -> 3, "6M" -> 6, "12M" -> 12 in base 10
-    const rangedPNLDataObjects = orderedListOfPNLDataObjects.slice(-(intRange + 3)); // Returns new array from index of intRange to Newest PNLData Object, add 3 to account for the forecast values
-    const rangedChartData = rangedPNLDataObjects.map((PNLDataObject, index) => {
+  const intRange = parseInt(strRange, 10); // Convert "3M" -> 3, "6M" -> 6, "12M" -> 12 in base 10
+  const rangedPNLDataObjects = orderedListOfPNLDataObjects.slice(-(intRange + 3)); // Returns new array from index of intRange to Newest PNLData Object, add 3 to account for the forecast values
+  
+  // Calculate the starting index in chartXLabels
+  const startIndex = 12 - intRange; // For 6M: 12-6=6, for 3M: 12-3=9, for 12M: 12-12=0
+  
+  const rangedChartData = rangedPNLDataObjects.map((PNLDataObject, index) => {
+    return {
+      month: chartXLabels[startIndex + index], // Use startIndex + current index
+      Historical: index < intRange ? PNLDataObject[PNLDataName] : null,
+      Forecasted: (index >= intRange || index === (intRange - 1)) ? PNLDataObject[PNLDataName] : null
+    }
+  })
 
-      return {
-        month: chartXLabels[index + (12 - intRange)],
-        Historical: index < intRange ? PNLDataObject[PNLDataName] : null,
-        Forecasted: (index >= intRange || index === (intRange - 1)) ? PNLDataObject[PNLDataName] : null
-      }
-    })
-
-    setCurrentRange(strRange);
-    setChartData(rangedChartData);
-  }
+  setCurrentRange(strRange);
+  setChartData(rangedChartData);
+}
 
   // Initial chart data - wait for data to load and select first card
   useEffect(() => {

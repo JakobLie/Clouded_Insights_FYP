@@ -43,6 +43,10 @@ export default function KPIView({
   function updateChartData(KPIName, orderedListOfKPIObjects, strRange) {
     const intRange = parseInt(strRange, 10); // Convert "3M" -> 3, "6M" -> 6, "12M" -> 12 in base 10
     const rangedKPIObjects = orderedListOfKPIObjects.slice(-(intRange + 3)); // Returns new array from index of intRange to Newest KPI Object, add 3 to account for the forecast values
+    
+    // Calculate the starting index in chartXLabels
+    const startIndex = 12 - intRange; // For 6M: 12-6=6, for 3M: 12-3=9, for 12M: 12-12=0
+    
     const rangedChartData = rangedKPIObjects.map((KPIObject, index) => {
       const value = KPIObject[KPIName];
 
@@ -52,7 +56,7 @@ export default function KPIView({
       const displayValue = isPercentage ? value * 100 : value;
 
       return {
-        month: chartXLabels[index + (12 - intRange)],
+        month: chartXLabels[startIndex + index], // Use startIndex + current index
         Historical: index < intRange ? displayValue : null,
         Forecasted: (index >= intRange || index === (intRange - 1)) ? displayValue : null
       }
