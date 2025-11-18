@@ -21,25 +21,52 @@ function TrashIcon(props) {
 }
 
 export default function NotificationItem({
+  id,
   variant = "warning", // "alert" | "warning"
   title,
   lines = [],          // [{ label: string, value: string }]
   timestamp = "12 Sep 2025 at 7:12 PM",
+  isRead = false,
+  onDelete,
+  onMarkAsRead,
 }) {
   const badge = {
     alert:  { text: "ALERT",   cls: "bg-red-600 text-white" },
     warning:{ text: "WARNING", cls: "bg-amber-400 text-white" },
   }[variant] || { text: "INFO", cls: "bg-gray-300 text-gray-800" };
 
+  const handleDelete = async (e) => {
+    e.stopPropagation();
+    if (onDelete) {
+      await onDelete(id);
+    }
+  };
+
+  const handleClick = async () => {
+    if (!isRead && onMarkAsRead) {
+      await onMarkAsRead(id);
+    }
+  };
+
   return (
-    <article className="rounded-md border border-gray-300 bg-white">
+    <article 
+      className={`rounded-md border cursor-pointer transition-all ${
+        isRead 
+          ? 'border-gray-200 bg-gray-50 opacity-70' 
+          : 'border-gray-400 bg-white shadow-sm'
+      }`}
+      onClick={handleClick}
+    >
       {/* header row: badge + title + timestamp */}
       <div className="flex items-start justify-between gap-3 p-3">
         <div className="flex items-center gap-3">
+          {!isRead && (
+            <div className="w-2 h-2 rounded-full bg-blue-600 flex-shrink-0" title="Unread" />
+          )}
           <span className={`text-xs font-bold px-2 py-1 rounded ${badge.cls}`}>
             {badge.text}
           </span>
-          <h3 className="font-semibold text-gray-900">
+          <h3 className={`font-semibold ${isRead ? 'text-gray-500' : 'text-gray-900'}`}>
             {title}
           </h3>
         </div>
@@ -51,7 +78,7 @@ export default function NotificationItem({
       </div>
 
       {/* body: lines */}
-      <div className="px-3 pb-3 text-sm text-gray-600">
+      <div className={`px-3 pb-3 text-sm ${isRead ? 'text-gray-500' : 'text-gray-600'}`}>
         <div className="space-y-1">
           {lines.map((l, i) => (
             <p key={i}>
@@ -66,9 +93,9 @@ export default function NotificationItem({
       <div className="flex justify-end px-3 pb-3">
         <button
           type="button"
-          className="inline-flex items-center rounded p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+          className="inline-flex items-center rounded p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
           aria-label="Delete notification"
-          // onClick={() => ...}
+          onClick={handleDelete}
         >
           <TrashIcon />
         </button>

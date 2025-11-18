@@ -31,7 +31,7 @@ export default function Chatbot() {
         },
         body: JSON.stringify({
           model: 'phi3', // or 'phi3' or 'gemma:2b'
-          prompt: input,
+          prompt: `The PROF KPI improved most: negative 1,085,569.69 → negative 1,081,506.10 (Δ +4,063.59). The cost item 8000_1000 caused the biggest profit drop on 03/2026, 8000_1000 increasing from 207.66 → 266.99 (Δ +59.33).`+input,
           stream: false
         }),
       });
