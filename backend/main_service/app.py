@@ -29,7 +29,7 @@ CORS(
     app,
     resources={r"/*": {
             "origins": ["http://localhost:3000"],
-            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
             "allow_headers": ["Content-Type"]
         }},
     supports_credentials=True
@@ -1264,6 +1264,92 @@ def triggerForecastService(): #TODO test
     message = json.dumps("initiate") # replace "initiate" with data in future if needed
     producer.publish(REDIS_TOPIC, message)
     return jsonify({"status": "success", "message": "Forecast service triggered"}), 200
+
+
+######################### Notifications ##########################
+# 1) Get all notifications for an employee
+@app.route("/notifications/<employee_id>", methods=['GET'])
+def get_notifications_by_employee(employee_id):
+    notifications = db.session.scalars(
+        db.select(Notification).where(Notification.employee_id == employee_id)
+    ).all()
+
+    if notifications:
+        return jsonify({
+            "code": 200,
+            "data": [n.json() for n in notifications]
+        }), 200
+
+    return jsonify({
+        "code": 404,
+        "message": f"No notifications found for employee_id {employee_id}"
+    }), 404
+
+
+# 2) Mark a notification as read
+@app.route("/notifications/<int:notification_id>/read", methods=['PATCH'])
+def mark_notification_read(notification_id):
+    notification = db.session.get(Notification, notification_id)
+
+    if not notification:
+        return jsonify({
+            "code": 404,
+            "message": f"Notification {notification_id} not found"
+        }), 404
+
+    notification.is_read = True
+    db.session.commit()
+
+    return jsonify({
+        "code": 200,
+        "data": notification.json(),
+        "message": "Notification marked as read"
+    }), 200
+
+
+# (Optional) Mark all notifications for an employee as read
+@app.route("/notifications/<employee_id>/read_all", methods=['PATCH'])
+def mark_all_notifications_read(employee_id):
+    notifications = db.session.scalars(
+        db.select(Notification).where(Notification.employee_id == employee_id,
+                                      Notification.is_read == False)
+    ).all()
+
+    if not notifications:
+        return jsonify({
+            "code": 404,
+            "message": f"No unread notifications for employee_id {employee_id}"
+        }), 404
+
+    for n in notifications:
+        n.is_read = True
+
+    db.session.commit()
+
+    return jsonify({
+        "code": 200,
+        "message": f"Marked {len(notifications)} notifications as read"
+    }), 200
+
+
+# 3) Delete a notification
+@app.route("/notifications/<int:notification_id>", methods=['DELETE'])
+def delete_notification(notification_id):
+    notification = db.session.get(Notification, notification_id)
+
+    if not notification:
+        return jsonify({
+            "code": 404,
+            "message": f"Notification {notification_id} not found"
+        }), 404
+
+    db.session.delete(notification)
+    db.session.commit()
+
+    return jsonify({
+        "code": 200,
+        "message": f"Notification {notification_id} deleted"
+    }), 200
 
 ######################## Helper Functions ########################
 # General
